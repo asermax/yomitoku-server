@@ -75,7 +75,7 @@ Complete design documentation is available in the shin-sekai project folder:
 
 ### API Endpoints
 
-**POST /api/identify-phrase** ✅ IMPLEMENTED
+**POST /api/identify-phrase**
 - Proxies phrase identification from screenshot to Gemini 3
 - Returns tokenized phrase with romaji and bounding box
 - Handles image validation (PNG format, 5MB max) and size limits
@@ -83,12 +83,12 @@ Complete design documentation is available in the shin-sekai project folder:
 - Requires: image (base64 PNG), selection (with viewportWidth/Height), optional metadata
 - Type safety: `IdentifyPhraseRequest` from `src/types/api.ts`
 
-**POST /api/analyze** 🚧 NOT YET IMPLEMENTED
+**POST /api/analyze**
 - Proxies content analysis requests (translate, explain, vocabulary, etc.)
 - Supports phrase-level and word-level actions
 - Returns structured analysis results
 
-**GET /api/health** ✅ IMPLEMENTED
+**GET /api/health**
 - Health check endpoint for monitoring
 - No rate limiting
 
@@ -129,18 +129,7 @@ npm run lint            # Run linting
 npm run format          # Format code with Prettier
 ```
 
-## Implementation Status & Learnings
-
-### Completed Features ✅
-
-1. **Environment Configuration** - @fastify/env with schema validation
-2. **Plugin System** - CORS, rate limiting, error handling, multipart
-3. **GeminiService** - Integration with @google/genai SDK v1.30.0
-4. **Retry Logic** - Exponential backoff for transient failures
-5. **Health Check Endpoint** - GET /api/health
-6. **Identify Phrase Endpoint** - POST /api/identify-phrase with full validation
-
-### Critical Implementation Learnings
+## Critical Implementation Patterns
 
 #### 1. @google/genai SDK API (NOT @google/generative-ai)
 
@@ -193,17 +182,14 @@ export const rateLimitPlugin: FastifyPluginAsync = async (app) => {
 
 **CRITICAL**: Use full viewport dimensions, NOT selection bounds.
 
-**Wrong**:
+Client must send `viewportWidth` and `viewportHeight` in the selection object. Calculate actual image dimensions:
+
 ```typescript
-const imageWidth = (selection.x + selection.width) * devicePixelRatio;  // Selection bounds!
+const imageWidth = selection.viewportWidth * devicePixelRatio;  // Full viewport
+const imageHeight = selection.viewportHeight * devicePixelRatio;
 ```
 
-**Correct**:
-```typescript
-const imageWidth = selection.viewportWidth * devicePixelRatio;  // Full viewport!
-```
-
-**Why**: Gemini API needs the full image dimensions for correct bounding box normalization, not just the selection region dimensions.
+**Why**: Gemini API needs the full image dimensions for correct bounding box normalization.
 
 #### 4. Base64 Image Validation
 
@@ -236,12 +222,6 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
   });
 };
 ```
-
-### Known Issues 🐛
-
-1. **Runtime Configuration Loading** (yomitoku-server-uyg) - `app.config` undefined in server.ts
-   - Server fails to start due to config timing issues
-   - Needs investigation of @fastify/env plugin loading order
 
 ### Type Safety Patterns
 
