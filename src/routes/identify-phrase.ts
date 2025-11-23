@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { GeminiService } from '../services/gemini.js';
 import { ApplicationError } from '../types/errors.js';
+import type { IdentifyPhraseRequest } from '../types/api.js';
 
 export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
   // Initialize GeminiService lazily inside route handler
@@ -85,22 +86,7 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
       },
     },
   }, async (request, reply) => {
-    const { image, selection, metadata } = request.body as {
-      image: string;
-      selection: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        viewportWidth: number;
-        viewportHeight: number;
-        devicePixelRatio?: number;
-      };
-      metadata?: {
-        url?: string;
-        title?: string;
-      };
-    };
+    const { image, selection, metadata } = request.body as IdentifyPhraseRequest;
 
     // Extract base64 data (remove data URL prefix if present)
     const base64Data = image.startsWith('data:')
@@ -173,16 +159,47 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
       return result;
     }
     catch (error) {
+      // Re-throw ApplicationError as-is
       if (error instanceof ApplicationError) {
         throw error;
       }
 
-      app.log.error({ error }, 'Unexpected error in identify-phrase');
+      // Log with context for debugging
+      app.log.error({
+        error,
+        selection,
+        imageSize,
+        metadata,
+      }, 'Unexpected error in identify-phrase');
 
+      // Categorize errors for better user feedback
+      const errorCode = (error as any)?.code;
+      const errorMessage = (error as any)?.message || '';
+
+      // Network connectivity errors
+      if (errorCode === 'ECONNREFUSED' || errorCode === 'ENOTFOUND') {
+        throw new ApplicationError(
+          'API_UNAVAILABLE',
+          'Unable to connect to analysis service. Please try again.',
+          503,
+        );
+      }
+
+      // Timeout errors
+      if (errorCode === 'ETIMEDOUT' || errorMessage.includes('timeout')) {
+        throw new ApplicationError(
+          'TIMEOUT',
+          'Request timed out. Please try again with a smaller image or selection.',
+          504,
+        );
+      }
+
+      // Generic API error with some context
       throw new ApplicationError(
         'API_ERROR',
         'Failed to identify phrase from screenshot',
         500,
+        { originalError: errorMessage },
       );
     }
   });
