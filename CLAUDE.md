@@ -223,6 +223,50 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
 };
 ```
 
+#### 6. Configuration Access Requires app.ready() and fastify-plugin
+
+**CRITICAL**: Plugin decorators (like `app.config`) require two things to be accessible:
+1. The plugin must be wrapped with `fastify-plugin` to expose decorators to parent scope
+2. `app.ready()` must be called before accessing the decorator
+
+**Problem**:
+```typescript
+// ❌ WRONG - app.config is undefined even after build()
+const app = await build();
+const port = app.config.PORT;  // TypeError: Cannot read properties of undefined
+```
+
+**Solution**:
+```typescript
+// In src/config/env.ts - Wrap plugin with fastify-plugin
+import fastifyPlugin from 'fastify-plugin';
+
+const envPluginImpl: FastifyPluginAsync = async (app) => {
+  await app.register(fastifyEnv, {
+    confKey: 'config',
+    schema,
+    dotenv: true,
+    data: process.env,
+  });
+};
+
+// ✅ CRITICAL: Wrap with fastify-plugin to expose decorator to parent
+export const envPlugin = fastifyPlugin(envPluginImpl);
+
+// In src/server.ts - Call app.ready() before accessing config
+const app = await build();
+await app.ready();  // ✅ Ensures all plugins and decorators are loaded
+const port = app.config.PORT;  // Now accessible
+```
+
+**Why**:
+- Fastify plugins are encapsulated by default - decorators don't propagate to parent scope without `fastify-plugin`
+- Plugins register decorators asynchronously during the loading phase
+- Even though `build()` awaits plugin registration, decorators aren't accessible until `ready()` completes the full initialization cycle
+- Without `fastify-plugin` wrapper, `app.config` is only available inside the plugin's own scope
+
+**Also see**: Pattern #5 (Lazy Service Initialization) for accessing config inside route handlers
+
 ### Type Safety Patterns
 
 **Shared Types**: All API types in `src/types/api.ts`

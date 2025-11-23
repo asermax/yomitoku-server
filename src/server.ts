@@ -4,6 +4,9 @@ const start = async () => {
   try {
     const app = await build();
 
+    // Ensure all plugins are loaded before accessing config
+    await app.ready();
+
     const address = await app.listen({
       port: app.config.PORT,
       host: app.config.HOST,

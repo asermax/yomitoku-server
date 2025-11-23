@@ -1,4 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
+import fastifyPlugin from 'fastify-plugin';
 import fastifyEnv from '@fastify/env';
 
 const schema = {
@@ -26,7 +27,7 @@ const schema = {
   },
 } as const;
 
-export const envPlugin: FastifyPluginAsync = async (app) => {
+const envPluginImpl: FastifyPluginAsync = async (app) => {
   await app.register(fastifyEnv, {
     confKey: 'config',
     schema,
@@ -34,11 +35,20 @@ export const envPlugin: FastifyPluginAsync = async (app) => {
     data: process.env,
   });
 
-  // Validate production requirements
-  if (app.config.NODE_ENV === 'production' && !app.config.CHROME_EXTENSION_ID) {
-    throw new Error('CHROME_EXTENSION_ID is required in production');
-  }
+  // Validate production requirements after plugin is loaded
+  // NOTE: This must run in onReady hook (not inline) because:
+  // 1. app.config is not available until plugin finishes loading
+  // 2. onReady ensures all plugins are ready before server starts
+  // 3. Validation failures here prevent server startup cleanly
+  app.addHook('onReady', async () => {
+    if (app.config.NODE_ENV === 'production' && !app.config.CHROME_EXTENSION_ID) {
+      throw new Error('CHROME_EXTENSION_ID is required in production');
+    }
+  });
 };
+
+// Wrap with fastify-plugin to expose config decorator to parent scope
+export const envPlugin = fastifyPlugin(envPluginImpl);
 
 declare module 'fastify' {
   interface FastifyInstance {
