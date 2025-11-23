@@ -99,6 +99,28 @@ const getService = () => {
 
 Plugins must be wrapped with `fastify-plugin` to expose decorators. Call `app.ready()` before accessing `app.config` in server startup.
 
+### 7. Testing
+
+**Framework**: Vitest with explicit imports (no globals)
+- Use `import { describe, it, expect } from 'vitest'` in test files
+- Node.js environment for backend testing
+- Fastify's `inject()` method for testing without starting the server
+- Test files colocated with source: `*.test.ts` or `*.spec.ts`
+
+**Pattern for route testing**:
+```typescript
+let app: Awaited<ReturnType<typeof build>>;
+
+beforeAll(async () => {
+  app = await build();
+  await app.ready();
+});
+
+afterAll(async () => {
+  await app.close();
+});
+```
+
 ## Development
 
 ```bash
