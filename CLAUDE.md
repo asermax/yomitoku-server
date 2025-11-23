@@ -130,43 +130,19 @@ MVP: 50 requests/hour per endpoint. Future: per-user quotas, different limits by
 
 ## Design Documentation
 
-Complete design documentation is in the shin-sekai project folder:
+Complete design documentation is available in the shin-sekai project folder:
 
 **Location**: `/home/agus/workspace/asermax/shin-sekai/01_Projects/yomitoku/design/`
 
-### Key Design Files
-
-1. **nodejs-server-architecture.md** (APPROVED FOR IMPLEMENTATION)
-   - Complete Node.js + Fastify + TypeScript architecture
-   - Project structure and file organization
-   - Plugin architecture and configuration
-   - Testing strategy with Vitest
-   - Deployment configuration
-
-2. **server-proxy.md**
-   - Server architecture specification
-   - API key management and security
-   - Request proxying and rate limiting
-   - Caching strategy for cost optimization
-   - Error handling and retry logic
-   - API endpoint specifications
-
-3. **api-integration.md**
-   - Gemini 3 API integration details
-   - Two-phase approach (phrase identification + analysis)
-   - Screenshot handling and data formats
-   - Coordinate transformation algorithms
-   - Cost optimization techniques
-
-4. **ui-ux-design.md**
-   - Extension UI that this server supports
-   - Client-side interaction flow
-   - Action types and requirements
-
-5. **technical-architecture.md**
-   - Chrome extension architecture
-   - Client-side patterns
-   - Message passing and state management
+```
+shin-sekai/01_Projects/yomitoku/
+└── design/
+    ├── nodejs-server-architecture.md  # Node.js + Fastify + TypeScript architecture (APPROVED)
+    ├── server-proxy.md                # Server architecture, API key management, rate limiting
+    ├── api-integration.md             # Gemini API integration, screenshot handling, coordinates
+    ├── ui-ux-design.md                # Extension UI that this server supports
+    └── technical-architecture.md      # Chrome extension architecture, message passing
+```
 
 ## Research Documentation
 
@@ -174,35 +150,15 @@ Research documentation is shared with the Chrome extension in shin-sekai:
 
 **Location**: `/home/agus/workspace/asermax/shin-sekai/01_Projects/yomitoku/research/`
 
-### Key Research Files
+```
+shin-sekai/01_Projects/yomitoku/
+└── research/
+    ├── gemini-api-research.md         # Gemini API capabilities, bounding boxes, cost optimization
+    ├── google-genai-sdk-research.md   # SDK patterns (use @google/genai, NOT @google/generative-ai)
+    └── fastify-framework-research.md  # Fastify patterns, plugins, schema validation
+```
 
-1. **gemini-api-research.md**
-   - Gemini API capabilities and OCR
-   - Bounding box detection and coordinate systems
-   - Context-aware text analysis strategies
-   - Cost optimization patterns
-   - Authentication and security
-
-2. **google-genai-sdk-research.md** (CRITICAL)
-   - **Use `@google/genai` NOT `@google/generative-ai`** (EOL August 31, 2025)
-   - SDK installation and setup
-   - API patterns for phrase identification and analysis
-   - Error handling and retry strategies
-   - Cost tracking and monitoring
-
-3. **fastify-framework-research.md**
-   - High-performance Node.js framework
-   - Plugin architecture and best practices
-   - Schema validation with Ajv
-   - Rate limiting and CORS configuration
-   - Production deployment patterns
-
-### Research Workflow
-
-When using `superpowers:using-live-documentation` skill:
-- Check shin-sekai research folder first for existing documentation
-- Only fetch external docs via Context7 if not covered in shin-sekai
-- After fetching new docs, register findings in shin-sekai research files
+**Research Workflow**: When using `superpowers:using-live-documentation` skill, check shin-sekai research folder first. Only fetch external docs if not covered. Register new findings in shin-sekai.
 
 ## Workflow Skills
 
