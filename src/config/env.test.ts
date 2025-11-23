@@ -52,6 +52,12 @@ describe('Server configuration loading', () => {
       expect(app.config.LOG_LEVEL).toBe('info');
     });
 
+    it('should fail startup when GEMINI_API_KEY is empty', async () => {
+      vi.stubEnv('GEMINI_API_KEY', '');
+
+      await expect(build()).rejects.toThrow(/GEMINI_API_KEY|required/i);
+    });
+
   });
 
   describe('Production environment validation', () => {
