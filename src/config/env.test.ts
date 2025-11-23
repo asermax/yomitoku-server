@@ -169,5 +169,19 @@ describe('Server configuration loading', () => {
         await testApp.close();
       }
     });
+
+    it('should reject invalid NODE_ENV values', async () => {
+      vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('NODE_ENV', 'staging');
+
+      await expect(build()).rejects.toThrow(/NODE_ENV|enum|staging/i);
+    });
+
+    it('should reject invalid LOG_LEVEL values', async () => {
+      vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('LOG_LEVEL', 'verbose');
+
+      await expect(build()).rejects.toThrow(/LOG_LEVEL|enum|verbose/i);
+    });
   });
 });
