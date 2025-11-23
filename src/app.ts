@@ -13,6 +13,7 @@ export async function build(opts: FastifyServerOptions = {}) {
 
   const app = Fastify({
     trustProxy: !isDevelopment, // Trust X-Forwarded-For in production
+    bodyLimit: 10 * 1024 * 1024, // 10MB limit for screenshot data
     logger: {
       level: process.env.LOG_LEVEL || 'info',
       ...(isDevelopment && {
