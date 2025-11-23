@@ -84,9 +84,15 @@ Complete design documentation is available in the shin-sekai project folder:
 - Type safety: `IdentifyPhraseRequest` from `src/types/api.ts`
 
 **POST /api/analyze**
-- Proxies content analysis requests (translate, explain, vocabulary, etc.)
-- Supports phrase-level and word-level actions
-- Returns structured analysis results
+- Proxies content analysis requests
+- **MVP supports 4 action types**: translate, explain, grammar, vocabulary
+- Future action types (from design spec): kanji, conjugation, related
+- Validates phrase (max 1000 chars), action type, and optional context
+- Optional fullPhrase context (must differ from phrase)
+- Optional image context with PNG validation
+- Rate limited: 50 requests per hour
+- Returns generic result object (MVP); future: action-specific schemas
+- Type safety: `AnalyzeRequest` from `src/types/api.ts`
 
 **GET /api/health**
 - Health check endpoint for monitoring
@@ -266,6 +272,41 @@ const port = app.config.PORT;  // Now accessible
 - Without `fastify-plugin` wrapper, `app.config` is only available inside the plugin's own scope
 
 **Also see**: Pattern #5 (Lazy Service Initialization) for accessing config inside route handlers
+
+#### 7. Gemini API Error Handling Pattern
+
+**Pattern**: Catch and categorize Gemini API errors specifically, hide internal details in production.
+
+```typescript
+catch (error) {
+  if (error instanceof ApplicationError) throw error;
+
+  const errorCode = (error as any)?.code;
+  const errorMessage = (error as any)?.message || '';
+
+  // Gemini API authentication errors (don't expose to client)
+  if (errorCode === 401 || errorMessage.includes('API key') || errorMessage.includes('INVALID_ARGUMENT')) {
+    throw new ApplicationError('API_UNAVAILABLE', 'Service temporarily unavailable. Please contact support.', 503);
+  }
+
+  // Gemini API rate limit or quota errors
+  if (errorCode === 429 || errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+    throw new ApplicationError('API_QUOTA_EXCEEDED', 'Service temporarily unavailable due to high demand. Please try again later.', 503);
+  }
+
+  // Network connectivity errors
+  if (errorCode === 'ECONNREFUSED' || errorCode === 'ENOTFOUND') {
+    throw new ApplicationError('API_UNAVAILABLE', 'Unable to connect to analysis service. Please try again.', 503);
+  }
+
+  // Generic errors - sanitize in production
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  throw new ApplicationError('API_ERROR', 'Failed to analyze phrase', 500,
+    isDevelopment ? { originalError: errorMessage } : undefined);
+}
+```
+
+**Why**: Gemini API returns specific error codes that should be categorized for better user experience. Never expose API authentication errors to clients (security). Sanitize error details in production.
 
 ### Type Safety Patterns
 
