@@ -88,6 +88,27 @@ describe('Server configuration loading', () => {
 
       expect(app.config.NODE_ENV).toBe('test');
     });
+
+    it('should fail startup in production when CHROME_EXTENSION_ID is empty', async () => {
+      vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('NODE_ENV', 'production');
+      vi.stubEnv('CHROME_EXTENSION_ID', '');
+
+      const testApp = await build();
+
+      let error: Error | null = null;
+
+      try {
+        await testApp.ready();
+      } catch (err) {
+        error = err as Error;
+      } finally {
+        await testApp.close();
+      }
+
+      expect(error).toBeDefined();
+      expect(error?.message).toBe('CHROME_EXTENSION_ID is required in production');
+    });
   });
 
   describe('Configuration accessibility', () => {

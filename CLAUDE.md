@@ -145,7 +145,9 @@ See `.env.example` for required configuration:
 MVP implements 4 analysis actions (translate, explain, grammar, vocabulary). Design spec includes 7 total; remaining 3 (kanji, conjugation, related) planned for future.
 
 ### Response Schema
-MVP uses generic response object for flexibility. Future: action-specific structured schemas per design spec.
+**GeminiService** implements detailed, action-specific schemas for all 4 MVP action types (translate, explain, grammar, vocabulary). Each action returns structured data with appropriate required/optional fields.
+
+**API route** uses flexible response schema (`additionalProperties: true`) to allow any properties through. This MVP approach prioritizes flexibility over strict API documentation. Future: Consider action-specific response schemas in OpenAPI/Swagger docs per design spec.
 
 ### Rate Limiting
 MVP: 50 requests/hour per endpoint. Future: per-user quotas, different limits by action type.
