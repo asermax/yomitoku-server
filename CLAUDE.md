@@ -75,18 +75,22 @@ Complete design documentation is available in the shin-sekai project folder:
 
 ### API Endpoints
 
-**POST /api/identify-phrase**
+**POST /api/identify-phrase** ✅ IMPLEMENTED
 - Proxies phrase identification from screenshot to Gemini 3
 - Returns tokenized phrase with romaji and bounding box
-- Handles image validation and size limits
+- Handles image validation (PNG format, 5MB max) and size limits
+- Rate limited: 50 requests per hour
+- Requires: image (base64 PNG), selection (with viewportWidth/Height), optional metadata
+- Type safety: `IdentifyPhraseRequest` from `src/types/api.ts`
 
-**POST /api/analyze**
+**POST /api/analyze** 🚧 NOT YET IMPLEMENTED
 - Proxies content analysis requests (translate, explain, vocabulary, etc.)
 - Supports phrase-level and word-level actions
 - Returns structured analysis results
 
-**GET /api/health**
+**GET /api/health** ✅ IMPLEMENTED
 - Health check endpoint for monitoring
+- No rate limiting
 
 ### Technology Stack (DECIDED - APPROVED FOR IMPLEMENTATION)
 
@@ -124,6 +128,128 @@ npm run test:coverage   # Generate coverage report
 npm run lint            # Run linting
 npm run format          # Format code with Prettier
 ```
+
+## Implementation Status & Learnings
+
+### Completed Features ✅
+
+1. **Environment Configuration** - @fastify/env with schema validation
+2. **Plugin System** - CORS, rate limiting, error handling, multipart
+3. **GeminiService** - Integration with @google/genai SDK v1.30.0
+4. **Retry Logic** - Exponential backoff for transient failures
+5. **Health Check Endpoint** - GET /api/health
+6. **Identify Phrase Endpoint** - POST /api/identify-phrase with full validation
+
+### Critical Implementation Learnings
+
+#### 1. @google/genai SDK API (NOT @google/generative-ai)
+
+**CRITICAL**: Use `@google/genai` (NOT `@google/generative-ai` which is EOL August 2025)
+
+**API Structure**:
+```typescript
+await ai.models.generateContent({
+  model: 'gemini-3-pro-preview',
+  contents: [{ parts: [...] }],
+  config: {  // NOT generationConfig!
+    responseMimeType: 'application/json',  // camelCase, NOT response_mime_type
+    responseSchema: schema,                 // camelCase, NOT response_schema
+    temperature: 0.2,
+  },
+});
+```
+
+**Key differences from REST API**:
+- Property: `config` (not `generationConfig`)
+- Casing: camelCase (not snake_case)
+- No `media_resolution` property in SDK (use default behavior)
+
+#### 2. Fastify Plugin Configuration Timing
+
+**CRITICAL**: Plugins cannot access `app.config` at plugin registration time.
+
+**Problem**:
+```typescript
+// ❌ WRONG - app.config is undefined at plugin load time
+export const rateLimitPlugin: FastifyPluginAsync = async (app) => {
+  await app.register(rateLimit, {
+    max: app.config.RATE_LIMIT_MAX_REQUESTS,  // undefined!
+  });
+};
+```
+
+**Solution**:
+```typescript
+// ✅ CORRECT - Access config inside plugin function
+export const rateLimitPlugin: FastifyPluginAsync = async (app) => {
+  const maxRequests = app.config?.RATE_LIMIT_MAX_REQUESTS ?? 100;
+  await app.register(rateLimit, { max: maxRequests });
+};
+```
+
+**Why**: Even though `await app.after()` is called after envPlugin registration, plugins are evaluated at module load time before the server finishes building.
+
+#### 3. Image Dimension Calculation
+
+**CRITICAL**: Use full viewport dimensions, NOT selection bounds.
+
+**Wrong**:
+```typescript
+const imageWidth = (selection.x + selection.width) * devicePixelRatio;  // Selection bounds!
+```
+
+**Correct**:
+```typescript
+const imageWidth = selection.viewportWidth * devicePixelRatio;  // Full viewport!
+```
+
+**Why**: Gemini API needs the full image dimensions for correct bounding box normalization, not just the selection region dimensions.
+
+#### 4. Base64 Image Validation
+
+**Security Best Practice**: Validate PNG magic bytes, don't just check format string.
+
+```typescript
+const pngMagicBytes = Buffer.from([0x89, 0x50, 0x4E, 0x47]);
+if (!imageBuffer.subarray(0, 4).equals(pngMagicBytes)) {
+  throw new ApplicationError('INVALID_REQUEST', 'Image must be PNG format', 400);
+}
+```
+
+#### 5. Lazy Service Initialization
+
+**Pattern**: Initialize services inside route handlers to ensure `app.config` is available.
+
+```typescript
+export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
+  let geminiService: GeminiService | null = null;
+
+  const getGeminiService = () => {
+    if (!geminiService) {
+      geminiService = new GeminiService(app.config.GEMINI_API_KEY, app.log);
+    }
+    return geminiService;
+  };
+
+  app.post('/identify-phrase', async (request, reply) => {
+    const result = await getGeminiService().identifyPhrase(...);
+  });
+};
+```
+
+### Known Issues 🐛
+
+1. **Runtime Configuration Loading** (yomitoku-server-uyg) - `app.config` undefined in server.ts
+   - Server fails to start due to config timing issues
+   - Needs investigation of @fastify/env plugin loading order
+
+### Type Safety Patterns
+
+**Shared Types**: All API types in `src/types/api.ts`
+- `IdentifyPhraseRequest` - Request body type
+- `SelectionRegion` - Coordinates with viewport dimensions
+- `PhraseToken` - Token structure in responses
+- Prevents type drift between schema and TypeScript definitions
 
 ## Key Design Principles
 
