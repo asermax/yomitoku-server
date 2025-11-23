@@ -7,17 +7,13 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install all dependencies (including devDependencies for build)
-RUN npm ci
-
 # Copy source code
 COPY . .
 
-# Build TypeScript
-RUN npm run build
-
-# Remove devDependencies after build
-RUN npm prune --production
+# Install dependencies, build TypeScript, and remove devDependencies in a single layer
+RUN npm ci && \
+    npm run build && \
+    npm prune --production
 
 # Expose port (Railway will override with PORT env var)
 EXPOSE 3000
