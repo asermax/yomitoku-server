@@ -10,6 +10,7 @@ export async function build(opts: FastifyServerOptions = {}) {
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   const app = Fastify({
+    trustProxy: !isDevelopment, // Trust X-Forwarded-For in production
     logger: {
       level: process.env.LOG_LEVEL || 'info',
       ...(isDevelopment && {

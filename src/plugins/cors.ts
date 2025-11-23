@@ -6,8 +6,13 @@ export const corsPlugin: FastifyPluginAsync = async (app) => {
     origin: (origin, callback) => {
       const isDevelopment = app.config.NODE_ENV === 'development';
 
+      // Handle requests with no origin (same-origin, direct requests, health checks)
+      if (!origin) {
+        return callback(null, true);
+      }
+
       // Development: Allow any chrome-extension origin
-      if (isDevelopment && origin?.startsWith('chrome-extension://')) {
+      if (isDevelopment && origin.startsWith('chrome-extension://')) {
         return callback(null, true);
       }
 
@@ -18,7 +23,7 @@ export const corsPlugin: FastifyPluginAsync = async (app) => {
       }
 
       // Also allow localhost in development
-      if (isDevelopment && origin?.startsWith('http://localhost')) {
+      if (isDevelopment && origin.startsWith('http://localhost')) {
         return callback(null, true);
       }
 

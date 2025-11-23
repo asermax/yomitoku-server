@@ -7,7 +7,7 @@ export const rateLimitPlugin: FastifyPluginAsync = async (app) => {
     max: app.config.RATE_LIMIT_MAX_REQUESTS,
     timeWindow: app.config.RATE_LIMIT_WINDOW_MS,
     cache: 10000,
-    allowList: ['127.0.0.1'],
+    allowList: app.config.NODE_ENV === 'development' ? ['127.0.0.1'] : [],
 
     keyGenerator: (request) => {
       return request.ip;

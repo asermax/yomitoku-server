@@ -14,14 +14,28 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
   backoffMultiplier: 2,
 };
 
+function getErrorStatus(error: any): number | undefined {
+  // Try different error properties (statusCode, status, code)
+  return error.statusCode || error.status || error.code;
+}
+
 function isTransientError(error: any): boolean {
   const transientCodes = [429, 500, 503];
-  return transientCodes.includes(error.status);
+  const status = getErrorStatus(error);
+
+  if (status && transientCodes.includes(status)) {
+    return true;
+  }
+
+  // Some SDKs use error messages or names for transient errors
+  const transientPatterns = /timeout|ECONNRESET|ETIMEDOUT|ENOTFOUND/i;
+  return transientPatterns.test(error.message || error.name || '');
 }
 
 function isPermanentError(error: any): boolean {
   const permanentCodes = [400, 401, 403, 404];
-  return permanentCodes.includes(error.status);
+  const status = getErrorStatus(error);
+  return status ? permanentCodes.includes(status) : false;
 }
 
 function sleep(ms: number): Promise<void> {

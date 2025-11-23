@@ -33,6 +33,11 @@ export const envPlugin: FastifyPluginAsync = async (app) => {
     dotenv: true,
     data: process.env,
   });
+
+  // Validate production requirements
+  if (app.config.NODE_ENV === 'production' && !app.config.CHROME_EXTENSION_ID) {
+    throw new Error('CHROME_EXTENSION_ID is required in production');
+  }
 };
 
 declare module 'fastify' {

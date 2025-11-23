@@ -23,7 +23,7 @@ export class GeminiService {
 
     return callWithRetry(async () => {
       const response = await this.ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-pro-preview',
         contents: [{
           parts: [
             {
@@ -38,13 +38,36 @@ export class GeminiService {
         generationConfig: {
           response_mime_type: 'application/json',
           response_schema: schema,
-          thinking: { budget: 0 },
           temperature: 0.2,
+          media_resolution: 'media_resolution_high',
         },
       });
 
       this.logUsage('identify-phrase', response.usageMetadata);
-      return JSON.parse(response.text);
+
+      if (!response.text) {
+        throw new ApplicationError(
+          'API_ERROR',
+          'Gemini API returned empty response',
+          502,
+        );
+      }
+
+      try {
+        return JSON.parse(response.text);
+      }
+      catch (parseError) {
+        this.logger.error({
+          responseText: response.text,
+          parseError,
+        }, 'Failed to parse Gemini API response');
+
+        throw new ApplicationError(
+          'API_ERROR',
+          'Invalid JSON response from Gemini API',
+          502,
+        );
+      }
     });
   }
 
@@ -72,17 +95,41 @@ export class GeminiService {
       }
 
       const response = await this.ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-pro-preview',
         contents: [{ parts }],
         generationConfig: {
           response_mime_type: 'application/json',
           response_schema: schema,
           temperature: 0.3,
+          ...(params.context?.image && { media_resolution: 'media_resolution_high' }),
         },
       });
 
       this.logUsage('analyze', response.usageMetadata);
-      return JSON.parse(response.text);
+
+      if (!response.text) {
+        throw new ApplicationError(
+          'API_ERROR',
+          'Gemini API returned empty response',
+          502,
+        );
+      }
+
+      try {
+        return JSON.parse(response.text);
+      }
+      catch (parseError) {
+        this.logger.error({
+          responseText: response.text,
+          parseError,
+        }, 'Failed to parse Gemini API response');
+
+        throw new ApplicationError(
+          'API_ERROR',
+          'Invalid JSON response from Gemini API',
+          502,
+        );
+      }
     });
   }
 
@@ -161,8 +208,15 @@ Tokenize the phrase into words with readings and romaji.
   }
 
   private logUsage(endpoint: string, usage: any) {
-    const inputCost = (usage.promptTokenCount / 1_000_000) * 0.30;
-    const outputCost = (usage.candidatesTokenCount / 1_000_000) * 2.50;
+    // Gemini 3.0 Pro pricing (as of November 2024)
+    const PRICING = {
+      INPUT_PER_MILLION: 2.00,  // USD per 1M input tokens
+      OUTPUT_PER_MILLION: 12.00, // USD per 1M output tokens
+      LAST_UPDATED: '2024-11-23',
+    };
+
+    const inputCost = (usage.promptTokenCount / 1_000_000) * PRICING.INPUT_PER_MILLION;
+    const outputCost = (usage.candidatesTokenCount / 1_000_000) * PRICING.OUTPUT_PER_MILLION;
 
     this.logger.info({
       endpoint,
