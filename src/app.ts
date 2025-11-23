@@ -6,6 +6,7 @@ import { errorHandlerPlugin } from './plugins/error-handler.js';
 import { multipartPlugin } from './plugins/multipart.js';
 import { healthRoutes } from './routes/health.js';
 import { identifyPhraseRoutes } from './routes/identify-phrase.js';
+import { analyzeRoutes } from './routes/analyze.js';
 
 export async function build(opts: FastifyServerOptions = {}) {
   const isDevelopment = process.env.NODE_ENV === 'development';
@@ -49,6 +50,7 @@ export async function build(opts: FastifyServerOptions = {}) {
   // Register routes
   await app.register(healthRoutes, { prefix: '/api' });
   await app.register(identifyPhraseRoutes, { prefix: '/api' });
+  await app.register(analyzeRoutes, { prefix: '/api' });
 
   return app;
 }
