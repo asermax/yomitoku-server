@@ -152,17 +152,63 @@ Tokenize the phrase into words with readings and romaji.
   }
 
   private buildAnalysisPrompt(params: any): string {
-    const basePrompt = `Analyze this Japanese phrase: "${params.phrase}"`;
+    const baseContext = params.context?.fullPhrase
+      ? `The phrase appears in this full context: "${params.context.fullPhrase}"\n`
+      : '';
+
+    const imageContext = params.context?.image
+      ? 'The phrase appears in the provided screenshot.\n'
+      : '';
+
+    const basePrompt = `You are analyzing Japanese text for a language learner.
+${imageContext}${baseContext}
+Selected phrase: "${params.phrase}"
+`;
 
     switch (params.action) {
       case 'translate':
-        return `${basePrompt}\nProvide accurate English translation with context.`;
+        return `${basePrompt}
+Provide an accurate English translation with the following:
+1. Natural English translation considering the context
+2. Literal translation if significantly different
+3. Brief explanation of any contextual nuances or cultural notes
+
+Be concise but complete.`;
+
       case 'explain':
-        return `${basePrompt}\nExplain the meaning, usage, and nuance.`;
+        return `${basePrompt}
+Provide a comprehensive explanation including:
+1. Core meaning and how the phrase is used
+2. How it functions in this specific context
+3. Common situations where this phrase appears
+4. Important nuances, connotations, or formality level
+
+Focus on helping the learner understand practical usage.`;
+
       case 'grammar':
-        return `${basePrompt}\nBreak down the grammar patterns and structures.`;
+        return `${basePrompt}
+Provide a grammatical breakdown:
+1. Identify all grammatical elements (particles, verb forms, conjugations, etc.)
+2. Explain the grammatical structure step-by-step
+3. Explain why each element is used in this context
+4. Common variations or alternative constructions
+5. Tips for learners (common mistakes, similar patterns)
+
+Be clear and educational.`;
+
       case 'vocabulary':
-        return `${basePrompt}\nProvide vocabulary analysis including definitions, JLPT level, and examples.`;
+        return `${basePrompt}
+Provide vocabulary information:
+1. Reading (hiragana/katakana) and romaji
+2. Kanji breakdown (if applicable) with individual meanings
+3. Word type (noun, verb, adjective, etc.)
+4. Primary meaning and alternative meanings
+5. Common collocations and phrases using this word
+6. 2-3 example sentences with translations
+7. JLPT level if applicable
+
+Format your response to be clear and structured.`;
+
       default:
         throw new ApplicationError('INVALID_ACTION', `Unknown action: ${params.action}`, 400);
     }
@@ -201,15 +247,142 @@ Tokenize the phrase into words with readings and romaji.
   }
 
   private getAnalysisSchema(action: string) {
-    // Placeholder for different action schemas
-    // In a real implementation, each action would have its own schema
-    return {
-      type: 'object',
-      properties: {
-        result: { type: 'string' },
-      },
-      required: ['result'],
-    };
+    switch (action) {
+      case 'translate':
+        return {
+          type: 'object',
+          properties: {
+            translation: {
+              type: 'string',
+              description: 'Natural English translation',
+            },
+            literalTranslation: {
+              type: 'string',
+              description: 'Literal translation if significantly different from natural translation',
+            },
+            notes: {
+              type: 'string',
+              description: 'Contextual nuances or cultural notes',
+            },
+          },
+          required: ['translation'],
+        };
+
+      case 'explain':
+        return {
+          type: 'object',
+          properties: {
+            meaning: {
+              type: 'string',
+              description: 'Core meaning and usage',
+            },
+            contextUsage: {
+              type: 'string',
+              description: 'How it functions in this specific context',
+            },
+            commonSituations: {
+              type: 'string',
+              description: 'Common situations where this phrase appears',
+            },
+            nuances: {
+              type: 'string',
+              description: 'Important nuances, connotations, or formality level',
+            },
+          },
+          required: ['meaning', 'contextUsage'],
+        };
+
+      case 'grammar':
+        return {
+          type: 'object',
+          properties: {
+            breakdown: {
+              type: 'string',
+              description: 'Step-by-step grammatical breakdown',
+            },
+            elements: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  element: { type: 'string' },
+                  type: { type: 'string' },
+                  explanation: { type: 'string' },
+                },
+              },
+              description: 'Individual grammatical elements with explanations',
+            },
+            variations: {
+              type: 'string',
+              description: 'Common variations or alternative constructions',
+            },
+            learnerTips: {
+              type: 'string',
+              description: 'Tips for learners, common mistakes',
+            },
+          },
+          required: ['breakdown'],
+        };
+
+      case 'vocabulary':
+        return {
+          type: 'object',
+          properties: {
+            reading: {
+              type: 'string',
+              description: 'Hiragana/katakana reading',
+            },
+            romaji: {
+              type: 'string',
+              description: 'Romaji reading',
+            },
+            kanjiBreakdown: {
+              type: 'string',
+              description: 'Kanji breakdown with individual meanings',
+            },
+            wordType: {
+              type: 'string',
+              description: 'Part of speech (noun, verb, adjective, etc.)',
+            },
+            meanings: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Primary and alternative meanings',
+            },
+            collocations: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Common collocations and phrases',
+            },
+            examples: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  japanese: { type: 'string' },
+                  english: { type: 'string' },
+                },
+              },
+              description: 'Example sentences with translations',
+            },
+            jlptLevel: {
+              type: 'string',
+              description: 'JLPT level if applicable (N5, N4, N3, N2, N1)',
+            },
+          },
+          required: ['reading', 'meanings'],
+        };
+
+      default:
+        // Fallback generic schema
+        return {
+          type: 'object',
+          properties: {
+            result: { type: 'string' },
+          },
+          required: ['result'],
+        };
+    }
   }
 
   private logUsage(endpoint: string, usage: any) {
