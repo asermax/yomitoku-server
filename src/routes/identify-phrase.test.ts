@@ -1,0 +1,430 @@
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
+import { build } from '../app.js';
+
+// Mock GeminiService BEFORE importing app
+const { mockGeminiService } = vi.hoisted(() => {
+  return {
+    mockGeminiService: {
+      identifyPhrase: vi.fn(),
+      analyzeContent: vi.fn(),
+    },
+  };
+});
+
+vi.mock('../services/gemini.js', () => ({
+  GeminiService: vi.fn(() => mockGeminiService),
+}));
+
+describe('POST /api/identify-phrase', () => {
+  let app: Awaited<ReturnType<typeof build>>;
+
+  // Valid PNG base64 (1x1 transparent PNG)
+  const validPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+  // Valid request payload
+  const validPayload = {
+    image: `data:image/png;base64,${validPngBase64}`,
+    selection: {
+      x: 100,
+      y: 200,
+      width: 300,
+      height: 100,
+      viewportWidth: 1920,
+      viewportHeight: 1080,
+      devicePixelRatio: 2,
+    },
+  };
+
+  beforeAll(async () => {
+    app = await build();
+    await app.ready();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should return 200 with valid phrase data when successful', async () => {
+    const mockResult = {
+      phrase: 'こんにちは',
+      romaji: 'konnichiwa',
+      boundingBox: [100, 200, 150, 500],
+      tokens: [
+        {
+          word: 'こんにちは',
+          reading: 'こんにちは',
+          romaji: 'konnichiwa',
+          partOfSpeech: ['interjection'],
+          hasKanji: false,
+          isCommon: true,
+        },
+      ],
+    };
+
+    mockGeminiService.identifyPhrase.mockResolvedValue(mockResult);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload: validPayload,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(mockGeminiService.identifyPhrase).toHaveBeenCalledTimes(1);
+
+    const result = response.json();
+    expect(result).toEqual(mockResult);
+    expect(result.phrase).toBe('こんにちは');
+    expect(result.tokens).toHaveLength(1);
+    expect(result.boundingBox).toHaveLength(4);
+  });
+
+  it('should pass correct parameters to GeminiService', async () => {
+    mockGeminiService.identifyPhrase.mockResolvedValue({
+      phrase: 'test',
+      romaji: 'test',
+      boundingBox: [0, 0, 0, 0],
+      tokens: [],
+    });
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload: validPayload,
+    });
+
+    expect(mockGeminiService.identifyPhrase).toHaveBeenCalledWith(
+      expect.objectContaining({
+        screenshot: validPngBase64,
+        selectionRegion: {
+          x: 200, // 100 * 2 (devicePixelRatio)
+          y: 400, // 200 * 2
+          width: 600, // 300 * 2
+          height: 200, // 100 * 2
+        },
+        imageWidth: 3840, // 1920 * 2
+        imageHeight: 2160, // 1080 * 2
+      }),
+    );
+  });
+
+  it('should handle devicePixelRatio correctly', async () => {
+    mockGeminiService.identifyPhrase.mockResolvedValue({
+      phrase: 'test',
+      romaji: 'test',
+      boundingBox: [0, 0, 0, 0],
+      tokens: [],
+    });
+
+    const payload = {
+      ...validPayload,
+      selection: {
+        ...validPayload.selection,
+        devicePixelRatio: 1,
+      },
+    };
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload,
+    });
+
+    expect(mockGeminiService.identifyPhrase).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selectionRegion: {
+          x: 100, // No scaling
+          y: 200,
+          width: 300,
+          height: 100,
+        },
+        imageWidth: 1920,
+        imageHeight: 1080,
+      }),
+    );
+  });
+
+  it('should default devicePixelRatio to 1 if not provided', async () => {
+    mockGeminiService.identifyPhrase.mockResolvedValue({
+      phrase: 'test',
+      romaji: 'test',
+      boundingBox: [0, 0, 0, 0],
+      tokens: [],
+    });
+
+    const payload = {
+      image: `data:image/png;base64,${validPngBase64}`,
+      selection: {
+        x: 100,
+        y: 200,
+        width: 300,
+        height: 100,
+        viewportWidth: 1920,
+        viewportHeight: 1080,
+        // devicePixelRatio not provided
+      },
+    };
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload,
+    });
+
+    expect(mockGeminiService.identifyPhrase).toHaveBeenCalledWith(
+      expect.objectContaining({
+        imageWidth: 1920, // No scaling applied
+        imageHeight: 1080,
+      }),
+    );
+  });
+
+  it('should accept base64 without data URL prefix', async () => {
+    mockGeminiService.identifyPhrase.mockResolvedValue({
+      phrase: 'test',
+      romaji: 'test',
+      boundingBox: [0, 0, 0, 0],
+      tokens: [],
+    });
+
+    const payload = {
+      ...validPayload,
+      image: validPngBase64, // No data URL prefix
+    };
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(mockGeminiService.identifyPhrase).toHaveBeenCalled();
+  });
+
+  it('should return 400 for missing image', async () => {
+    const payload = {
+      selection: validPayload.selection,
+      // image missing
+    };
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(mockGeminiService.identifyPhrase).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 for missing selection', async () => {
+    const payload = {
+      image: `data:image/png;base64,${validPngBase64}`,
+      // selection missing
+    };
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(mockGeminiService.identifyPhrase).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 for invalid base64', async () => {
+    const payload = {
+      ...validPayload,
+      image: 'not-valid-base64!!!',
+    };
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload,
+    });
+
+    expect(response.statusCode).toBe(400);
+    const error = response.json();
+    expect(error.message).toContain('base64');
+  });
+
+  it('should return 400 for non-PNG image format', async () => {
+    // JPEG magic bytes in base64
+    const jpegBase64 = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwABmQ/9k=';
+
+    const payload = {
+      ...validPayload,
+      image: `data:image/jpeg;base64,${jpegBase64}`,
+    };
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload,
+    });
+
+    expect(response.statusCode).toBe(400);
+    const error = response.json();
+    expect(error.message).toContain('PNG');
+  });
+
+  it('should return 413 for image exceeding size limit', async () => {
+    // Create a large base64 string (> 5MB when decoded)
+    const largeBase64 = validPngBase64.repeat(100000);
+
+    const payload = {
+      ...validPayload,
+      image: `data:image/png;base64,${largeBase64}`,
+    };
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload,
+    });
+
+    expect(response.statusCode).toBe(413);
+    const error = response.json();
+    // Fastify returns this error at the body parser level
+    expect(error.message).toContain('Request body is too large');
+  });
+
+  it('should return 400 for invalid selection coordinates', async () => {
+    const payload = {
+      ...validPayload,
+      selection: {
+        ...validPayload.selection,
+        x: -10, // Negative coordinate
+      },
+    };
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(mockGeminiService.identifyPhrase).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 for zero width selection', async () => {
+    const payload = {
+      ...validPayload,
+      selection: {
+        ...validPayload.selection,
+        width: 0,
+      },
+    };
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(mockGeminiService.identifyPhrase).not.toHaveBeenCalled();
+  });
+
+  it('should handle ApplicationError from service', async () => {
+    const { ApplicationError } = await import('../types/errors.js');
+
+    mockGeminiService.identifyPhrase.mockRejectedValue(
+      new ApplicationError('API_ERROR', 'Gemini API returned empty response', 502),
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload: validPayload,
+    });
+
+    expect(response.statusCode).toBe(502);
+    const error = response.json();
+    expect(error.message).toContain('empty response');
+  });
+
+  it('should return 503 for connection errors', async () => {
+    const error = new Error('Connection failed');
+    (error as any).code = 'ECONNREFUSED';
+
+    mockGeminiService.identifyPhrase.mockRejectedValue(error);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload: validPayload,
+    });
+
+    expect(response.statusCode).toBe(503);
+    const responseError = response.json();
+    expect(responseError.message).toContain('Unable to connect');
+  });
+
+  it('should return 504 for timeout errors', async () => {
+    const error = new Error('Request timeout');
+    (error as any).code = 'ETIMEDOUT';
+
+    mockGeminiService.identifyPhrase.mockRejectedValue(error);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload: validPayload,
+    });
+
+    expect(response.statusCode).toBe(504);
+    const responseError = response.json();
+    expect(responseError.message).toContain('timed out');
+  });
+
+  it('should return 500 for unexpected errors', async () => {
+    mockGeminiService.identifyPhrase.mockRejectedValue(
+      new Error('Unexpected error'),
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload: validPayload,
+    });
+
+    expect(response.statusCode).toBe(500);
+    const error = response.json();
+    expect(error.message).toContain('Failed to identify phrase');
+  });
+
+  it('should include metadata in request if provided', async () => {
+    mockGeminiService.identifyPhrase.mockResolvedValue({
+      phrase: 'test',
+      romaji: 'test',
+      boundingBox: [0, 0, 0, 0],
+      tokens: [],
+    });
+
+    const payload = {
+      ...validPayload,
+      metadata: {
+        url: 'https://example.com',
+        title: 'Example Page',
+      },
+    };
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload,
+    });
+
+    expect(response.statusCode).toBe(200);
+    // Metadata is logged but not passed to service in current implementation
+  });
+});
