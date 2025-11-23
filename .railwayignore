@@ -1,0 +1,12 @@
+# Railway ignore file - excludes files from deployment
+node_modules/
+.git/
+.env
+.env.*
+*.log
+coverage/
+.vscode/
+.idea/
+*.test.ts
+*.spec.ts
+.beads/
