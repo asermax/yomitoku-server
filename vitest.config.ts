@@ -23,6 +23,7 @@ export default defineConfig({
     // Mock behavior
     clearMocks: true,
     restoreMocks: true,
+    unstubEnvs: true,
 
     // Coverage configuration
     coverage: {
