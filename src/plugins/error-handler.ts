@@ -12,7 +12,7 @@ export const errorHandlerPlugin: FastifyPluginAsync = async (app) => {
     }, 'Request error');
 
     // Handle validation errors
-    if (error.validation) {
+    if ('validation' in error && error.validation) {
       return reply.code(400).send({
         success: false,
         error: {

@@ -42,11 +42,10 @@ export class GeminiService {
             { text: prompt },
           ],
         }],
-        generationConfig: {
-          response_mime_type: 'application/json',
-          response_schema: schema,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: schema,
           temperature: 0.2,
-          media_resolution: 'media_resolution_high',
         },
       });
 
@@ -104,11 +103,10 @@ export class GeminiService {
       const response = await this.ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: [{ parts }],
-        generationConfig: {
-          response_mime_type: 'application/json',
-          response_schema: schema,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: schema,
           temperature: 0.3,
-          ...(params.context?.image && { media_resolution: 'media_resolution_high' }),
         },
       });
 
