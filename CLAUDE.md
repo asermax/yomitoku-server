@@ -113,9 +113,6 @@ Complete design documentation is available in the shin-sekai project folder:
 
 ## Development Commands
 
-*Commands will be available after project initialization*
-
-Expected commands (Node.js + Fastify + TypeScript):
 ```bash
 npm install             # Install dependencies
 npm run dev             # Development server with hot reload (ts-node-dev)
