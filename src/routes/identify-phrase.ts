@@ -2,8 +2,6 @@ import { FastifyPluginAsync } from 'fastify';
 import { GeminiService } from '../services/gemini.js';
 import { ApplicationError } from '../types/errors.js';
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-
 export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
   // Initialize GeminiService lazily inside route handler
   let geminiService: GeminiService | null = null;
@@ -16,6 +14,12 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
   };
 
   app.post('/identify-phrase', {
+    config: {
+      rateLimit: {
+        max: 50,
+        timeWindow: '1 hour',
+      },
+    },
     schema: {
       body: {
         type: 'object',
@@ -27,13 +31,15 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
           },
           selection: {
             type: 'object',
-            required: ['x', 'y', 'width', 'height'],
+            required: ['x', 'y', 'width', 'height', 'viewportWidth', 'viewportHeight'],
             properties: {
               x: { type: 'number', minimum: 0 },
               y: { type: 'number', minimum: 0 },
               width: { type: 'number', minimum: 1 },
               height: { type: 'number', minimum: 1 },
-              devicePixelRatio: { type: 'number', minimum: 0.1 },
+              viewportWidth: { type: 'number', minimum: 1 },
+              viewportHeight: { type: 'number', minimum: 1 },
+              devicePixelRatio: { type: 'number', minimum: 0.1, default: 1 },
             },
           },
           metadata: {
@@ -86,6 +92,8 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
         y: number;
         width: number;
         height: number;
+        viewportWidth: number;
+        viewportHeight: number;
         devicePixelRatio?: number;
       };
       metadata?: {
@@ -94,36 +102,60 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
       };
     };
 
-    // Validate base64 image format
-    if (!image.startsWith('data:image/png;base64,') && !image.match(/^[A-Za-z0-9+/=]+$/)) {
-      throw new ApplicationError(
-        'INVALID_REQUEST',
-        'Image must be base64-encoded PNG',
-        400,
-      );
-    }
-
     // Extract base64 data (remove data URL prefix if present)
     const base64Data = image.startsWith('data:')
       ? image.split(',')[1]
       : image;
 
-    // Validate image size
-    const imageSize = Buffer.from(base64Data, 'base64').length;
+    // Validate base64 format
+    if (!base64Data || !/^[A-Za-z0-9+/]+=*$/.test(base64Data)) {
+      throw new ApplicationError(
+        'INVALID_REQUEST',
+        'Image must be valid base64-encoded data',
+        400,
+      );
+    }
 
-    if (imageSize > MAX_IMAGE_SIZE) {
+    // Decode and validate image
+    let imageBuffer: Buffer;
+    try {
+      imageBuffer = Buffer.from(base64Data, 'base64');
+    }
+    catch (error) {
+      throw new ApplicationError(
+        'INVALID_REQUEST',
+        'Invalid base64 encoding',
+        400,
+      );
+    }
+
+    // Validate it's PNG format by checking magic bytes
+    const pngMagicBytes = Buffer.from([0x89, 0x50, 0x4E, 0x47]);
+    if (imageBuffer.length < 4 || !imageBuffer.subarray(0, 4).equals(pngMagicBytes)) {
+      throw new ApplicationError(
+        'INVALID_REQUEST',
+        'Image must be PNG format',
+        400,
+      );
+    }
+
+    // Validate image size
+    const imageSize = imageBuffer.length;
+    const maxImageSize = app.config?.MAX_IMAGE_SIZE ?? 5242880; // Default 5MB
+
+    if (imageSize > maxImageSize) {
       throw new ApplicationError(
         'IMAGE_TOO_LARGE',
-        `Image size (${(imageSize / 1024 / 1024).toFixed(2)}MB) exceeds limit of 5MB`,
+        `Image size (${(imageSize / 1024 / 1024).toFixed(2)}MB) exceeds limit of ${(maxImageSize / 1024 / 1024).toFixed(0)}MB`,
         413,
       );
     }
 
-    // Calculate image dimensions from selection
-    // The selection coordinates are in CSS pixels, we need actual image dimensions
+    // Calculate actual image dimensions from viewport dimensions
+    // Viewport dimensions are in CSS pixels, multiply by devicePixelRatio for actual pixels
     const devicePixelRatio = selection.devicePixelRatio || 1;
-    const imageWidth = (selection.x + selection.width) * devicePixelRatio;
-    const imageHeight = (selection.y + selection.height) * devicePixelRatio;
+    const imageWidth = Math.ceil(selection.viewportWidth * devicePixelRatio);
+    const imageHeight = Math.ceil(selection.viewportHeight * devicePixelRatio);
 
     try {
       const result = await getGeminiService().identifyPhrase({
