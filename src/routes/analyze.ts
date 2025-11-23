@@ -29,7 +29,8 @@ export const analyzeRoutes: FastifyPluginAsync = async (app) => {
           phrase: {
             type: 'string',
             minLength: 1,
-            description: 'Japanese phrase to analyze',
+            maxLength: 1000,
+            description: 'Japanese phrase to analyze (max 1000 characters)',
           },
           action: {
             type: 'string',
@@ -62,6 +63,9 @@ export const analyzeRoutes: FastifyPluginAsync = async (app) => {
           },
         },
       },
+      // NOTE: MVP uses generic response schema for flexibility.
+      // Future: Implement action-specific schemas (translate, explain, grammar, vocabulary)
+      // as defined in design/server-proxy.md lines 186-223
     },
   }, async (request, reply) => {
     const { phrase, action, context } = request.body as AnalyzeRequest;
@@ -73,6 +77,27 @@ export const analyzeRoutes: FastifyPluginAsync = async (app) => {
         'Phrase cannot be empty',
         400,
       );
+    }
+
+    // Validate fullPhrase context if provided
+    if (context?.fullPhrase) {
+      const trimmedFullPhrase = context.fullPhrase.trim();
+      const trimmedPhrase = phrase.trim();
+
+      if (trimmedFullPhrase === trimmedPhrase) {
+        throw new ApplicationError(
+          'INVALID_REQUEST',
+          'fullPhrase must be different from phrase',
+          400,
+        );
+      }
+
+      if (!trimmedFullPhrase.includes(trimmedPhrase)) {
+        app.log.warn({
+          phrase: trimmedPhrase,
+          fullPhrase: trimmedFullPhrase,
+        }, 'fullPhrase does not contain phrase - unusual but allowed');
+      }
     }
 
     // If image is provided, validate it
@@ -160,6 +185,33 @@ export const analyzeRoutes: FastifyPluginAsync = async (app) => {
       const errorCode = (error as any)?.code;
       const errorMessage = (error as any)?.message || '';
 
+      // Gemini API authentication errors
+      if (errorCode === 401 || errorMessage.includes('API key') || errorMessage.includes('INVALID_ARGUMENT')) {
+        throw new ApplicationError(
+          'API_UNAVAILABLE',
+          'Service temporarily unavailable. Please contact support.',
+          503,
+        );
+      }
+
+      // Gemini API rate limit or quota errors
+      if (errorCode === 429 || errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+        throw new ApplicationError(
+          'API_QUOTA_EXCEEDED',
+          'Service temporarily unavailable due to high demand. Please try again later.',
+          503,
+        );
+      }
+
+      // Gemini API content filtering errors
+      if (errorMessage.includes('content') && errorMessage.includes('filter')) {
+        throw new ApplicationError(
+          'CONTENT_FILTERED',
+          'Unable to process this content. Please try different text.',
+          400,
+        );
+      }
+
       // Network connectivity errors
       if (errorCode === 'ECONNREFUSED' || errorCode === 'ENOTFOUND') {
         throw new ApplicationError(
@@ -178,12 +230,13 @@ export const analyzeRoutes: FastifyPluginAsync = async (app) => {
         );
       }
 
-      // Generic API error with some context
+      // Generic API error - don't expose internal details in production
+      const isDevelopment = process.env.NODE_ENV === 'development';
       throw new ApplicationError(
         'API_ERROR',
         'Failed to analyze phrase',
         500,
-        { originalError: errorMessage },
+        isDevelopment ? { originalError: errorMessage } : undefined,
       );
     }
   });
