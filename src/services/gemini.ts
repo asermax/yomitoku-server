@@ -3,6 +3,13 @@ import { FastifyInstance } from 'fastify';
 import { callWithRetry } from './retry.js';
 import { ApplicationError } from '../types/errors.js';
 
+// Gemini 3.0 Pro pricing (as of November 2024)
+const GEMINI_PRICING = {
+  INPUT_PER_MILLION: 2.00,  // USD per 1M input tokens
+  OUTPUT_PER_MILLION: 12.00, // USD per 1M output tokens
+  LAST_UPDATED: '2024-11-23',
+} as const;
+
 export class GeminiService {
   private ai: GoogleGenAI;
   private logger: FastifyInstance['log'];
@@ -208,15 +215,8 @@ Tokenize the phrase into words with readings and romaji.
   }
 
   private logUsage(endpoint: string, usage: any) {
-    // Gemini 3.0 Pro pricing (as of November 2024)
-    const PRICING = {
-      INPUT_PER_MILLION: 2.00,  // USD per 1M input tokens
-      OUTPUT_PER_MILLION: 12.00, // USD per 1M output tokens
-      LAST_UPDATED: '2024-11-23',
-    };
-
-    const inputCost = (usage.promptTokenCount / 1_000_000) * PRICING.INPUT_PER_MILLION;
-    const outputCost = (usage.candidatesTokenCount / 1_000_000) * PRICING.OUTPUT_PER_MILLION;
+    const inputCost = (usage.promptTokenCount / 1_000_000) * GEMINI_PRICING.INPUT_PER_MILLION;
+    const outputCost = (usage.candidatesTokenCount / 1_000_000) * GEMINI_PRICING.OUTPUT_PER_MILLION;
 
     this.logger.info({
       endpoint,
