@@ -265,7 +265,7 @@ Provide an accurate English translation with the following:
 2. Literal translation if significantly different
 3. Brief explanation of any contextual nuances or cultural notes
 
-Be concise but complete.`;
+Format all text fields using markdown. Highlight key terms and concepts.`;
 
       case 'explain':
         return `${basePrompt}
@@ -275,7 +275,7 @@ Provide a comprehensive explanation including:
 3. Common situations where this phrase appears
 4. Important nuances, connotations, or formality level
 
-Focus on helping the learner understand practical usage.`;
+Format all text fields using markdown. Highlight key usage patterns and nuances.`;
 
       case 'grammar':
         return `${basePrompt}
@@ -286,7 +286,7 @@ Provide a grammatical breakdown:
 4. Common variations or alternative constructions
 5. Tips for learners (common mistakes, similar patterns)
 
-Be clear and educational.`;
+Format all text fields using markdown. Highlight grammatical elements and patterns.`;
 
       case 'vocabulary':
         return `${basePrompt}
@@ -303,7 +303,7 @@ Provide vocabulary information:
 7. JLPT level if applicable
 8. Whether the word is common or rare
 
-Format your response to be clear and structured.`;
+Format all text fields using markdown. Highlight kanji characters, meanings, and key vocabulary terms.`;
 
       case 'conjugation':
         return `${basePrompt}
@@ -319,7 +319,7 @@ Analyze the conjugation used in context:
 4. Verb or adjective type (godan/ichidan for verbs, i-adjective/na-adjective for adjectives)
 5. Provide a usage example showing why this form fits the context
 
-Be clear and educational about the conjugation process.`;
+Format all text fields using markdown. Highlight conjugation forms and transformation steps.`;
 
       default:
         throw new ApplicationError('INVALID_ACTION', `Unknown action: ${params.action}`, 400);
