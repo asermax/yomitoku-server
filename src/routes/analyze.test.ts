@@ -399,7 +399,8 @@ describe('POST /api/analyze', () => {
     });
 
     it('should return 413 for image exceeding size limit', async () => {
-      const largeBase64 = validPngBase64.repeat(100000);
+      // Repeat enough times to exceed 10MB bodyLimit
+      const largeBase64 = validPngBase64.repeat(110000);
 
       const response = await app.inject({
         method: 'POST',
@@ -414,6 +415,9 @@ describe('POST /api/analyze', () => {
       });
 
       expect(response.statusCode).toBe(413);
+      const error = response.json();
+      // Fastify returns this error at the body parser level (not through our error handler when using inject())
+      expect(error.code).toBe('FST_ERR_CTP_BODY_TOO_LARGE');
     });
   });
 

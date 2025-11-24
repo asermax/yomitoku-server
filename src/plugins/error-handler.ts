@@ -11,6 +11,17 @@ export const errorHandlerPlugin: FastifyPluginAsync = async (app) => {
       userAgent: request.headers['user-agent'],
     }, 'Request error');
 
+    // Handle body too large errors (must be before validation check)
+    if ('code' in error && error.code === 'FST_ERR_CTP_BODY_TOO_LARGE') {
+      return reply.code(413).send({
+        success: false,
+        error: {
+          code: 'PAYLOAD_TOO_LARGE',
+          message: error.message,
+        },
+      });
+    }
+
     // Handle validation errors
     if ('validation' in error && error.validation) {
       return reply.code(400).send({

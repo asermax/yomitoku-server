@@ -344,7 +344,8 @@ describe('POST /api/identify-phrase', () => {
 
   it('should return 413 for image exceeding Fastify body limit', async () => {
     // Create a large base64 string (> 10MB) - hits Fastify body parser limit
-    const largeBase64 = validPngBase64.repeat(100000);
+    // Repeat enough times to exceed 10MB bodyLimit
+    const largeBase64 = validPngBase64.repeat(110000);
 
     const payload = {
       ...validPayload,
@@ -359,7 +360,8 @@ describe('POST /api/identify-phrase', () => {
 
     expect(response.statusCode).toBe(413);
     const error = response.json();
-    // Fastify returns this error at the body parser level
+    // Fastify returns this error at the body parser level (not through our error handler when using inject())
+    expect(error.code).toBe('FST_ERR_CTP_BODY_TOO_LARGE');
     expect(error.message).toContain('Request body is too large');
   });
 
