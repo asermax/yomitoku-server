@@ -37,6 +37,7 @@ export const validJpegBase64 = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJ
 
 /**
  * Create a valid identify-phrase request payload
+ * Image is pre-cropped to selection on client side
  */
 export const createIdentifyPhrasePayload = (overrides?: any) => ({
   image: `data:image/png;base64,${validPngBase64}`,
@@ -45,8 +46,6 @@ export const createIdentifyPhrasePayload = (overrides?: any) => ({
     y: 200,
     width: 300,
     height: 100,
-    viewportWidth: 1920,
-    viewportHeight: 1080,
     devicePixelRatio: 2,
   },
   ...overrides,

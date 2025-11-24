@@ -22,6 +22,7 @@ describe('POST /api/identify-phrase', () => {
   const validPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
   // Valid request payload
+  // Image is pre-cropped to selection on client side
   const validPayload = {
     image: `data:image/png;base64,${validPngBase64}`,
     selection: {
@@ -29,8 +30,6 @@ describe('POST /api/identify-phrase', () => {
       y: 200,
       width: 300,
       height: 100,
-      viewportWidth: 1920,
-      viewportHeight: 1080,
       devicePixelRatio: 2,
     },
   };
@@ -167,14 +166,8 @@ describe('POST /api/identify-phrase', () => {
     expect(mockGeminiService.identifyPhrase).toHaveBeenCalledWith(
       expect.objectContaining({
         screenshot: validPngBase64,
-        selectionRegion: {
-          x: 200, // 100 * 2 (devicePixelRatio)
-          y: 400, // 200 * 2
-          width: 600, // 300 * 2
-          height: 200, // 100 * 2
-        },
-        imageWidth: 3840, // 1920 * 2
-        imageHeight: 2160, // 1080 * 2
+        imageWidth: 600, // selection.width (300) * devicePixelRatio (2)
+        imageHeight: 200, // selection.height (100) * devicePixelRatio (2)
       }),
     );
   });
@@ -203,19 +196,35 @@ describe('POST /api/identify-phrase', () => {
 
     expect(mockGeminiService.identifyPhrase).toHaveBeenCalledWith(
       expect.objectContaining({
-        selectionRegion: {
-          x: 100, // No scaling
-          y: 200,
-          width: 300,
-          height: 100,
-        },
-        imageWidth: 1920,
-        imageHeight: 1080,
+        imageWidth: 300, // selection.width (300) * devicePixelRatio (1) - no scaling
+        imageHeight: 100, // selection.height (100) * devicePixelRatio (1)
       }),
     );
   });
 
-  it('should default devicePixelRatio to 1 if not provided', async () => {
+  it('should reject requests missing devicePixelRatio', async () => {
+    const payload = {
+      image: `data:image/png;base64,${validPngBase64}`,
+      selection: {
+        x: 100,
+        y: 200,
+        width: 300,
+        height: 100,
+        // devicePixelRatio not provided - now required
+      },
+    };
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/identify-phrase',
+      payload,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(mockGeminiService.identifyPhrase).not.toHaveBeenCalled();
+  });
+
+  it('should calculate image dimensions from selection dimensions', async () => {
     mockGeminiService.identifyPhrase.mockResolvedValue({
       phrase: 'test',
       romaji: 'test',
@@ -226,13 +235,11 @@ describe('POST /api/identify-phrase', () => {
     const payload = {
       image: `data:image/png;base64,${validPngBase64}`,
       selection: {
-        x: 100,
-        y: 200,
-        width: 300,
-        height: 100,
-        viewportWidth: 1920,
-        viewportHeight: 1080,
-        // devicePixelRatio not provided
+        x: 50,
+        y: 100,
+        width: 400,
+        height: 200,
+        devicePixelRatio: 3,
       },
     };
 
@@ -242,10 +249,11 @@ describe('POST /api/identify-phrase', () => {
       payload,
     });
 
+    // Verify image dimensions are calculated from selection, not viewport
     expect(mockGeminiService.identifyPhrase).toHaveBeenCalledWith(
       expect.objectContaining({
-        imageWidth: 1920, // No scaling applied
-        imageHeight: 1080,
+        imageWidth: 1200, // selection.width (400) * devicePixelRatio (3)
+        imageHeight: 600, // selection.height (200) * devicePixelRatio (3)
       }),
     );
   });
