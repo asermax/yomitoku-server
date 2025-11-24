@@ -15,9 +15,13 @@ export default defineConfig({
     include: ['**/*.{test,spec}.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/build/**'],
 
-    // Execution settings
-    pool: 'forks',
+    // Execution settings - use threads instead of forks to prevent hanging processes
+    // Threads are lighter weight and clean up more reliably than fork processes
+    pool: 'threads',
     fileParallelism: true,
+
+    // Force cleanup after tests complete
+    teardownTimeout: 5000, // 5 second timeout for cleanup
 
     // Timeouts (generous for API testing)
     testTimeout: 10000,
