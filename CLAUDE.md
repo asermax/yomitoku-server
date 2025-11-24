@@ -43,6 +43,14 @@ This file provides guidance to Claude Code when working with this codebase.
 - PNG validation, size limits, rate limiting
 - Returns tokenized phrase with readings and bounding box
 
+### POST /api/identify-phrases
+- Identifies multiple Japanese phrases from full viewport screenshots
+- Same validation as identify-phrase (PNG, size limits, rate limiting)
+- Returns array of phrases with tokenized words and bounding boxes
+- Model configured for speed (thinking level minimized)
+- NOT cached (full-page screenshots vary significantly)
+- Maximum phrases: 25 (configurable per request)
+
 ### POST /api/analyze
 - Analyzes Japanese phrases and words with 5 action types:
   - **Phrase-level (3):** translate, explain, grammar

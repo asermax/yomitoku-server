@@ -230,12 +230,12 @@ Identify up to ${maxPhrases} distinct Japanese text phrases visible in this imag
 For each phrase:
 - Provide the complete Japanese text
 - Tokenize into words with readings and romaji
-- Provide precise bounding box coordinates as {x, y, width, height} in a normalized 0-1000 coordinate system:
-  - x: horizontal position from left edge (0 = left, 1000 = right)
-  - y: vertical position from top edge (0 = top, 1000 = bottom)
-  - width: horizontal extent (0-1000)
-  - height: vertical extent (0-1000)
-  - All coordinates relative to this full image's dimensions
+- Provide precise bounding box coordinates as [y_min, x_min, y_max, x_max] in a normalized 0-1000 coordinate system:
+  - All values are 0-1000 scale relative to this full image's dimensions
+  - y_min: top edge of bounding box
+  - x_min: left edge of bounding box
+  - y_max: bottom edge of bounding box
+  - x_max: right edge of bounding box
 
 Focus on meaningful phrases (sentences, clauses, or standalone expressions), not individual words.
 Prioritize larger, more prominent text phrases.
@@ -367,14 +367,10 @@ Be clear and educational about the conjugation process.`;
           phrase: { type: 'string' },
           romaji: { type: 'string' },
           boundingBox: {
-            type: 'object',
-            properties: {
-              x: { type: 'number' },
-              y: { type: 'number' },
-              width: { type: 'number' },
-              height: { type: 'number' },
-            },
-            required: ['x', 'y', 'width', 'height'],
+            type: 'array',
+            items: { type: 'number' },
+            minItems: 4,
+            maxItems: 4,
           },
           tokens: {
             type: 'array',
