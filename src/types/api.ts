@@ -6,24 +6,6 @@
  */
 
 /**
- * Selection region coordinates on a webpage
- * All coordinates are in CSS pixels (viewport coordinates)
- * Image is pre-cropped to this selection on client side
- */
-export interface SelectionRegion {
-  /** X coordinate of selection in viewport (CSS pixels) - for coordinate reconstruction */
-  x: number;
-  /** Y coordinate of selection in viewport (CSS pixels) - for coordinate reconstruction */
-  y: number;
-  /** Width of cropped image (CSS pixels) */
-  width: number;
-  /** Height of cropped image (CSS pixels) */
-  height: number;
-  /** Device pixel ratio for calculating actual image dimensions */
-  devicePixelRatio: number;
-}
-
-/**
  * Optional metadata about the webpage
  */
 export interface PageMetadata {
@@ -37,10 +19,8 @@ export interface PageMetadata {
  * Request body for POST /api/identify-phrase
  */
 export interface IdentifyPhraseRequest {
-  /** Base64-encoded PNG screenshot */
+  /** Base64-encoded PNG screenshot (cropped to selection) */
   image: string;
-  /** Selection region coordinates */
-  selection: SelectionRegion;
   /** Optional page metadata */
   metadata?: PageMetadata;
 }

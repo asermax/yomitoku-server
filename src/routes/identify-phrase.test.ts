@@ -25,13 +25,6 @@ describe('POST /api/identify-phrase', () => {
   // Image is pre-cropped to selection on client side
   const validPayload = {
     image: `data:image/png;base64,${validPngBase64}`,
-    selection: {
-      x: 100,
-      y: 200,
-      width: 300,
-      height: 100,
-      devicePixelRatio: 2,
-    },
   };
 
   beforeAll(async () => {
@@ -163,100 +156,11 @@ describe('POST /api/identify-phrase', () => {
       payload: validPayload,
     });
 
-    expect(mockGeminiService.identifyPhrase).toHaveBeenCalledWith(
-      expect.objectContaining({
-        screenshot: validPngBase64,
-        imageWidth: 600, // selection.width (300) * devicePixelRatio (2)
-        imageHeight: 200, // selection.height (100) * devicePixelRatio (2)
-      }),
-    );
+    expect(mockGeminiService.identifyPhrase).toHaveBeenCalledWith({
+      screenshot: validPngBase64,
+    });
   });
 
-  it('should handle devicePixelRatio correctly', async () => {
-    mockGeminiService.identifyPhrase.mockResolvedValue({
-      phrase: 'test',
-      romaji: 'test',
-      boundingBox: [0, 0, 0, 0],
-      tokens: [],
-    });
-
-    const payload = {
-      ...validPayload,
-      selection: {
-        ...validPayload.selection,
-        devicePixelRatio: 1,
-      },
-    };
-
-    await app.inject({
-      method: 'POST',
-      url: '/api/identify-phrase',
-      payload,
-    });
-
-    expect(mockGeminiService.identifyPhrase).toHaveBeenCalledWith(
-      expect.objectContaining({
-        imageWidth: 300, // selection.width (300) * devicePixelRatio (1) - no scaling
-        imageHeight: 100, // selection.height (100) * devicePixelRatio (1)
-      }),
-    );
-  });
-
-  it('should reject requests missing devicePixelRatio', async () => {
-    const payload = {
-      image: `data:image/png;base64,${validPngBase64}`,
-      selection: {
-        x: 100,
-        y: 200,
-        width: 300,
-        height: 100,
-        // devicePixelRatio not provided - now required
-      },
-    };
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/identify-phrase',
-      payload,
-    });
-
-    expect(response.statusCode).toBe(400);
-    expect(mockGeminiService.identifyPhrase).not.toHaveBeenCalled();
-  });
-
-  it('should calculate image dimensions from selection dimensions', async () => {
-    mockGeminiService.identifyPhrase.mockResolvedValue({
-      phrase: 'test',
-      romaji: 'test',
-      boundingBox: [0, 0, 0, 0],
-      tokens: [],
-    });
-
-    const payload = {
-      image: `data:image/png;base64,${validPngBase64}`,
-      selection: {
-        x: 50,
-        y: 100,
-        width: 400,
-        height: 200,
-        devicePixelRatio: 3,
-      },
-    };
-
-    await app.inject({
-      method: 'POST',
-      url: '/api/identify-phrase',
-      payload,
-    });
-
-    // Verify image dimensions are calculated from selection, not viewport
-    expect(mockGeminiService.identifyPhrase).toHaveBeenCalledWith(
-      expect.objectContaining({
-        imageWidth: 1200, // selection.width (400) * devicePixelRatio (3)
-        imageHeight: 600, // selection.height (200) * devicePixelRatio (3)
-      }),
-    );
-  });
 
   it('should accept base64 without data URL prefix', async () => {
     mockGeminiService.identifyPhrase.mockResolvedValue({
@@ -283,24 +187,7 @@ describe('POST /api/identify-phrase', () => {
 
   it('should return 400 for missing image', async () => {
     const payload = {
-      selection: validPayload.selection,
       // image missing
-    };
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/identify-phrase',
-      payload,
-    });
-
-    expect(response.statusCode).toBe(400);
-    expect(mockGeminiService.identifyPhrase).not.toHaveBeenCalled();
-  });
-
-  it('should return 400 for missing selection', async () => {
-    const payload = {
-      image: `data:image/png;base64,${validPngBase64}`,
-      // selection missing
     };
 
     const response = await app.inject({
@@ -385,43 +272,6 @@ describe('POST /api/identify-phrase', () => {
     // functional and would work in production with proper bodyLimit configuration.
   });
 
-  it('should return 400 for invalid selection coordinates', async () => {
-    const payload = {
-      ...validPayload,
-      selection: {
-        ...validPayload.selection,
-        x: -10, // Negative coordinate
-      },
-    };
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/identify-phrase',
-      payload,
-    });
-
-    expect(response.statusCode).toBe(400);
-    expect(mockGeminiService.identifyPhrase).not.toHaveBeenCalled();
-  });
-
-  it('should return 400 for zero width selection', async () => {
-    const payload = {
-      ...validPayload,
-      selection: {
-        ...validPayload.selection,
-        width: 0,
-      },
-    };
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/identify-phrase',
-      payload,
-    });
-
-    expect(response.statusCode).toBe(400);
-    expect(mockGeminiService.identifyPhrase).not.toHaveBeenCalled();
-  });
 
   it('should handle ApplicationError from service', async () => {
     const { ApplicationError } = await import('../types/errors.js');

@@ -24,22 +24,11 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
     schema: {
       body: {
         type: 'object',
-        required: ['image', 'selection'],
+        required: ['image'],
         properties: {
           image: {
             type: 'string',
-            description: 'Base64-encoded PNG screenshot',
-          },
-          selection: {
-            type: 'object',
-            required: ['x', 'y', 'width', 'height', 'devicePixelRatio'],
-            properties: {
-              x: { type: 'number', minimum: 0 },
-              y: { type: 'number', minimum: 0 },
-              width: { type: 'number', minimum: 1 },
-              height: { type: 'number', minimum: 1 },
-              devicePixelRatio: { type: 'number', minimum: 0.1 },
-            },
+            description: 'Base64-encoded PNG screenshot (cropped to selection)',
           },
           metadata: {
             type: 'object',
@@ -84,7 +73,7 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
       },
     },
   }, async (request, reply) => {
-    const { image, selection, metadata } = request.body as IdentifyPhraseRequest;
+    const { image, metadata } = request.body as IdentifyPhraseRequest;
 
     // Extract base64 data (remove data URL prefix if present)
     const base64Data = image.startsWith('data:')
@@ -135,18 +124,9 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
       );
     }
 
-    // Calculate actual image dimensions from selection dimensions
-    // Image is already cropped to selection on client side
-    // Selection dimensions are in CSS pixels, multiply by devicePixelRatio for actual pixels
-    const devicePixelRatio = selection.devicePixelRatio;
-    const imageWidth = Math.ceil(selection.width * devicePixelRatio);
-    const imageHeight = Math.ceil(selection.height * devicePixelRatio);
-
     try {
       const result = await getGeminiService().identifyPhrase({
         screenshot: base64Data,
-        imageWidth,
-        imageHeight,
       });
 
       return result;
@@ -160,7 +140,6 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
       // Log with context for debugging
       app.log.error({
         error,
-        selection,
         imageSize,
         metadata,
       }, 'Unexpected error in identify-phrase');
