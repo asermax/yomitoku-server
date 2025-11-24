@@ -44,8 +44,10 @@ This file provides guidance to Claude Code when working with this codebase.
 - Returns tokenized phrase with readings and bounding box
 
 ### POST /api/analyze
-- Analyzes Japanese phrases (translate, explain, grammar, vocabulary)
-- **MVP: 4 action types** (future: kanji, conjugation, related)
+- Analyzes Japanese phrases and words with 5 action types:
+  - **Phrase-level (3):** translate, explain, grammar
+  - **Word-level (2):** vocabulary (with kanji etymology/radicals), conjugation (context-specific chain)
+- **MVP: 4 action types implemented** (future: enhance vocabulary, add conjugation)
 - Optional fullPhrase context and image
 - Input validation: max 1000 chars, fullPhrase must differ from phrase
 
@@ -159,7 +161,15 @@ See `.env.example` for required configuration:
 ## Design Decisions
 
 ### Action Type Scope
-MVP implements 4 analysis actions (translate, explain, grammar, vocabulary). Design spec includes 7 total; remaining 3 (kanji, conjugation, related) planned for future.
+**Current MVP:** 4 analysis actions implemented (translate, explain, grammar, vocabulary).
+
+**Final MVP Design:** 5 action types total
+- **Phrase-level (3):** translate, explain, grammar
+- **Word-level (2):**
+  - **vocabulary:** Enhanced with kanji etymology (radicals, how kanji form word meaning)
+  - **conjugation:** Context-specific analysis showing conjugation chain from dictionary form
+
+**Removed from original design:** Standalone kanji action (merged into vocabulary), related vocabulary action (out of scope).
 
 ### Response Schema
 **GeminiService** implements detailed, action-specific schemas for all 4 MVP action types (translate, explain, grammar, vocabulary). Each action returns structured data with appropriate required/optional fields.
@@ -219,6 +229,33 @@ Every conversation starts with:
 - Project state inquiries → Track as work in beads
 - Code implementation → Track as work in beads
 - Research tasks → Track as work in beads
+
+### Design-First Workflow
+
+**BEFORE starting work on ANY bead, you MUST review related design files.**
+
+Design files are documented in the "Design Documentation" section above. Refer to that section for locations.
+
+#### Pre-Implementation Design Checklist
+
+**For EVERY bead you pick up, BEFORE writing code:**
+
+1. **Identify relevant design files** based on bead description (see "Design Documentation" section for file list)
+2. **Read the relevant sections** to understand design intent, requirements, and patterns
+3. **Validate or update the design:**
+   - Design current → Proceed with implementation
+   - Design outdated → Update design FIRST, then implement
+   - Design missing → Create design section FIRST, then implement
+   - Implementation reveals issues → Stop, update design, continue
+4. **Track design updates as separate beads** if needed, with `blocks` dependency to implementation
+
+#### Design File Updates
+
+**When to update:** Better approach found, missing details, changed requirements, bug revealed flaw
+
+**How to update:** Edit shin-sekai design files directly, keep high-level (focus on "what/why" not "how"), update CLAUDE.md if key patterns change
+
+**Example:** Before implementing analyze endpoint → Read api-integration.md Phase 2 + server-proxy.md rate limiting → Verify current → Update if needed → Then implement
 
 ### Code-Related Task Workflows
 
