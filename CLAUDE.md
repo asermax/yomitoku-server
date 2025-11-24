@@ -70,13 +70,16 @@ Use `@google/genai` SDK with:
 
 Plugins cannot access `app.config` at registration time. Use lazy initialization or access config inside route handlers.
 
-### 3. Image Validation
+### 3. Image Validation and Dimensions
 
-Validate full viewport dimensions for bounding box calculations:
+**Client-side image cropping**: The extension sends pre-cropped images containing only the user's selection. Calculate image dimensions from selection dimensions:
+
 ```
-imageWidth = viewportWidth * devicePixelRatio
-imageHeight = viewportHeight * devicePixelRatio
+imageWidth = selection.width * devicePixelRatio
+imageHeight = selection.height * devicePixelRatio
 ```
+
+**Required fields**: `devicePixelRatio` is essential for calculating actual image dimensions on high-DPI displays (Retina, 4K, etc.).
 
 Check PNG magic bytes for security, not just format string.
 

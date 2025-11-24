@@ -21,7 +21,6 @@ export class GeminiService {
 
   async identifyPhrase(params: {
     screenshot: string;
-    selectionRegion: { x: number; y: number; width: number; height: number };
     imageWidth: number;
     imageHeight: number;
   }) {
@@ -144,12 +143,11 @@ export class GeminiService {
   private buildIdentifyPrompt(params: any): string {
     return `
 You are analyzing a screenshot of a Japanese webpage.
-User selected region: x=${params.selectionRegion.x}, y=${params.selectionRegion.y},
-width=${params.selectionRegion.width}, height=${params.selectionRegion.height}
 Image size: ${params.imageWidth}x${params.imageHeight}
 
-Identify the Japanese phrase in or near this region.
-Provide precise bounding box coordinates (normalized 0-1000).
+Identify the primary Japanese phrase in this image.
+The entire image contains the user's selection.
+Provide precise bounding box coordinates (normalized 0-1000 relative to this image).
 Tokenize the phrase into words with readings and romaji.
     `.trim();
   }

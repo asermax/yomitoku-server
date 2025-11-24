@@ -8,22 +8,19 @@
 /**
  * Selection region coordinates on a webpage
  * All coordinates are in CSS pixels (viewport coordinates)
+ * Image is pre-cropped to this selection on client side
  */
 export interface SelectionRegion {
-  /** X coordinate of selection (CSS pixels) */
+  /** X coordinate of selection in viewport (CSS pixels) - for coordinate reconstruction */
   x: number;
-  /** Y coordinate of selection (CSS pixels) */
+  /** Y coordinate of selection in viewport (CSS pixels) - for coordinate reconstruction */
   y: number;
-  /** Width of selection (CSS pixels) */
+  /** Width of cropped image (CSS pixels) */
   width: number;
-  /** Height of selection (CSS pixels) */
+  /** Height of cropped image (CSS pixels) */
   height: number;
-  /** Full viewport width (CSS pixels) */
-  viewportWidth: number;
-  /** Full viewport height (CSS pixels) */
-  viewportHeight: number;
-  /** Device pixel ratio for coordinate transformation */
-  devicePixelRatio?: number;
+  /** Device pixel ratio for calculating actual image dimensions */
+  devicePixelRatio: number;
 }
 
 /**
@@ -74,7 +71,7 @@ export interface IdentifyPhraseResponse {
   phrase: string;
   /** Romanized reading */
   romaji: string;
-  /** Bounding box coordinates (normalized 0-1000) */
+  /** Bounding box coordinates (normalized 0-1000 relative to cropped image) */
   boundingBox: [number, number, number, number];
   /** Tokenized phrase */
   tokens: PhraseToken[];

@@ -32,15 +32,13 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
           },
           selection: {
             type: 'object',
-            required: ['x', 'y', 'width', 'height', 'viewportWidth', 'viewportHeight'],
+            required: ['x', 'y', 'width', 'height', 'devicePixelRatio'],
             properties: {
               x: { type: 'number', minimum: 0 },
               y: { type: 'number', minimum: 0 },
               width: { type: 'number', minimum: 1 },
               height: { type: 'number', minimum: 1 },
-              viewportWidth: { type: 'number', minimum: 1 },
-              viewportHeight: { type: 'number', minimum: 1 },
-              devicePixelRatio: { type: 'number', minimum: 0.1, default: 1 },
+              devicePixelRatio: { type: 'number', minimum: 0.1 },
             },
           },
           metadata: {
@@ -137,23 +135,18 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
       );
     }
 
-    // Calculate actual image dimensions from viewport dimensions
-    // Viewport dimensions are in CSS pixels, multiply by devicePixelRatio for actual pixels
-    const devicePixelRatio = selection.devicePixelRatio || 1;
-    const imageWidth = Math.ceil(selection.viewportWidth * devicePixelRatio);
-    const imageHeight = Math.ceil(selection.viewportHeight * devicePixelRatio);
+    // Calculate actual image dimensions from selection dimensions
+    // Image is already cropped to selection on client side
+    // Selection dimensions are in CSS pixels, multiply by devicePixelRatio for actual pixels
+    const devicePixelRatio = selection.devicePixelRatio;
+    const imageWidth = Math.ceil(selection.width * devicePixelRatio);
+    const imageHeight = Math.ceil(selection.height * devicePixelRatio);
 
     try {
       const result = await getGeminiService().identifyPhrase({
         screenshot: base64Data,
-        selectionRegion: {
-          x: selection.x * devicePixelRatio,
-          y: selection.y * devicePixelRatio,
-          width: selection.width * devicePixelRatio,
-          height: selection.height * devicePixelRatio,
-        },
-        imageWidth: Math.ceil(imageWidth),
-        imageHeight: Math.ceil(imageHeight),
+        imageWidth,
+        imageHeight,
       });
 
       return result;
