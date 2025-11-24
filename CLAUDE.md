@@ -58,6 +58,7 @@ This file provides guidance to Claude Code when working with this codebase.
 - **MVP: 4 action types implemented** (future: enhance vocabulary, add conjugation)
 - Optional fullPhrase context and image
 - Input validation: max 1000 chars, fullPhrase must differ from phrase
+- **Response Format**: All text fields use markdown formatting to highlight key information (terms, patterns, grammatical elements, etc.). Clients should render markdown for rich formatting.
 
 ### GET /api/health
 - Health check for monitoring
