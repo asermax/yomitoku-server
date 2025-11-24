@@ -172,6 +172,52 @@ describe('POST /api/analyze - Integration Tests', () => {
     });
   });
 
+  describe('conjugation action', () => {
+    it('should return 200 with conjugation analysis', async () => {
+      const mockResult = {
+        formUsed: '食べている',
+        dictionaryForm: '食べる',
+        conjugationChain: [
+          {
+            form: '食べる',
+            rule: 'Dictionary form (ichidan verb)',
+            explanation: 'Base form meaning "to eat"',
+          },
+          {
+            form: '食べて',
+            rule: 'Te-form (drop る, add て)',
+            explanation: 'Connective form for continuous aspect',
+          },
+          {
+            form: '食べている',
+            rule: 'Continuous form (て-form + いる)',
+            explanation: 'Indicates ongoing action or state',
+          },
+        ],
+        wordType: 'ichidan verb',
+        usageExample: {
+          japanese: '彼は今ご飯を食べている。',
+          english: 'He is eating a meal now.',
+          explanation: 'The continuous form indicates an action in progress',
+        },
+      };
+
+      mockGeminiService.analyzeContent.mockResolvedValue(mockResult);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: createAnalyzePayload({
+          phrase: '食べている',
+          action: 'conjugation',
+        }),
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual(mockResult);
+    });
+  });
+
   describe('validation errors', () => {
     it('should return 400 for missing phrase', async () => {
       const response = await app.inject({

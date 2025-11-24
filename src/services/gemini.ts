@@ -21,10 +21,8 @@ export class GeminiService {
 
   async identifyPhrase(params: {
     screenshot: string;
-    imageWidth: number;
-    imageHeight: number;
   }) {
-    const prompt = this.buildIdentifyPrompt(params);
+    const prompt = this.buildIdentifyPrompt();
     const schema = this.getPhraseSchema();
 
     return callWithRetry(async () => {
@@ -140,14 +138,16 @@ export class GeminiService {
     });
   }
 
-  private buildIdentifyPrompt(params: any): string {
+  private buildIdentifyPrompt(): string {
     return `
 You are analyzing a screenshot of a Japanese webpage.
-Image size: ${params.imageWidth}x${params.imageHeight}
 
 Identify the primary Japanese phrase in this image.
 The entire image contains the user's selection.
-Provide precise bounding box coordinates (normalized 0-1000 relative to this image).
+Provide precise bounding box coordinates in a normalized 0-1000 coordinate system, where:
+- 0 represents the top-left corner
+- 1000 represents the bottom-right corner
+- Coordinates are relative to this image's dimensions
 Tokenize the phrase into words with readings and romaji.
     `.trim();
   }
@@ -370,7 +370,7 @@ Be clear and educational about the conjugation process.`;
                       etymology: { type: 'string', description: 'How the kanji is formed' },
                       radicals: { type: 'string', description: 'Kanji radicals' },
                     },
-                    required: ['character', 'meaning'],
+                    required: ['character', 'meaning', 'etymology', 'radicals'],
                   },
                   description: 'Individual kanji analysis',
                 },
