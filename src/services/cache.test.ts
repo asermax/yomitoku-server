@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AnalyzeCacheService } from './cache';
+import { AnalyzeCacheService } from './cache.js';
 
 describe('AnalyzeCacheService', () => {
   let cache: AnalyzeCacheService;

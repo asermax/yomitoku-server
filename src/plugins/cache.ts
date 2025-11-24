@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import fastifyPlugin from 'fastify-plugin';
-import { AnalyzeCacheService } from '../services/cache';
+import { AnalyzeCacheService } from '../services/cache.js';
 
 const cachePluginImpl: FastifyPluginAsync = async (app) => {
   const maxEntries = app.config?.CACHE_MAX_ENTRIES ?? 1000;
