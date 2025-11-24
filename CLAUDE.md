@@ -31,6 +31,7 @@ This file provides guidance to Claude Code when working with this codebase.
 - `@google/genai` - Gemini API SDK (NOT `@google/generative-ai` - EOL Aug 2025)
 - `@fastify/env` - Environment validation
 - `@fastify/rate-limit` - Rate limiting
+- `lru-cache` - In-memory LRU cache
 - `pino` - Structured logging
 
 **Hosting**: Railway or Render recommended for MVP
@@ -50,6 +51,9 @@ This file provides guidance to Claude Code when working with this codebase.
 
 ### GET /api/health
 - Health check for monitoring
+
+### GET /api/cache/stats
+- Cache performance metrics (hits, misses, size, hit rate)
 
 ## Key Patterns
 
@@ -121,6 +125,17 @@ afterAll(async () => {
 });
 ```
 
+### 8. Caching Strategy
+
+**MVP uses in-memory LRU cache** for `/api/analyze` endpoint only:
+- Cache key: hash of (phrase + action type + fullPhrase)
+- Image is NOT included in cache key (images vary too much for effective caching)
+- TTL: 1 hour (configurable via `CACHE_TTL_SECONDS`)
+- Max entries: 1000 (configurable via `CACHE_MAX_ENTRIES`)
+- Only successful responses are cached (errors bypass cache)
+
+**Do NOT cache** `/api/identify-phrase` endpoint - image variations prevent effective caching.
+
 ## Development
 
 ```bash
@@ -138,6 +153,8 @@ See `.env.example` for required configuration:
 - `NODE_ENV` - Environment (development/production)
 - `RATE_LIMIT_MAX_REQUESTS` - Requests per hour
 - `MAX_IMAGE_SIZE` - Image size limit
+- `CACHE_TTL_SECONDS` - Cache time-to-live in seconds (default: 3600)
+- `CACHE_MAX_ENTRIES` - Maximum cache entries (default: 1000)
 
 ## Design Decisions
 
