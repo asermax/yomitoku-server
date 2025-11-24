@@ -75,6 +75,40 @@ export interface AnalyzeRequest {
 }
 
 /**
+ * Request body for POST /api/identify-phrases
+ */
+export interface IdentifyPhrasesRequest {
+  /** Base64-encoded PNG screenshot (full viewport) */
+  image: string;
+  /** Maximum number of phrases to identify (default: 25, max: 100) */
+  maxPhrases?: number;
+  /** Optional page metadata */
+  metadata?: PageMetadata;
+}
+
+/**
+ * Phrase data in identify-phrases response
+ */
+export interface PhraseData {
+  /** Identified Japanese phrase */
+  phrase: string;
+  /** Romanized reading */
+  romaji: string;
+  /** Bounding box coordinates [y_min, x_min, y_max, x_max] (normalized 0-1000 relative to full viewport image) */
+  boundingBox: [number, number, number, number];
+  /** Tokenized phrase */
+  tokens: PhraseToken[];
+}
+
+/**
+ * Response body for POST /api/identify-phrases
+ */
+export interface IdentifyPhrasesResponse {
+  /** Array of identified phrases */
+  phrases: PhraseData[];
+}
+
+/**
  * Response body for POST /api/analyze
  * Schema varies by action type
  */

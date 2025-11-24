@@ -7,6 +7,7 @@ import { build } from '../src/app.js';
  */
 export const mockGeminiService = {
   identifyPhrase: vi.fn(),
+  identifyPhrases: vi.fn(),
   analyzeContent: vi.fn(),
 };
 
@@ -43,6 +44,16 @@ export const validJpegBase64 = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJ
  */
 export const createIdentifyPhrasePayload = (overrides?: any) => ({
   image: `data:image/png;base64,${validPngBase64}`,
+  ...overrides,
+});
+
+/**
+ * Create a valid identify-phrases request payload
+ * Full viewport screenshot for multi-phrase detection
+ */
+export const createIdentifyPhrasesPayload = (overrides?: any) => ({
+  image: `data:image/png;base64,${validPngBase64}`,
+  maxPhrases: 25,
   ...overrides,
 });
 
