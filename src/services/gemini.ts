@@ -201,14 +201,34 @@ Be clear and educational.`;
         return `${basePrompt}
 Provide vocabulary information:
 1. Reading (hiragana/katakana) and romaji
-2. Kanji breakdown (if applicable) with individual meanings
+2. If the word contains kanji:
+   - Analyze each kanji in the word
+   - For each kanji: its meaning in this context, etymology (how it's formed), and radicals
+   - Explain how the kanji combine to form the word's meaning
 3. Word type (noun, verb, adjective, etc.)
 4. Primary meaning and alternative meanings
 5. Common collocations and phrases using this word
 6. 2-3 example sentences with translations
 7. JLPT level if applicable
+8. Whether the word is common or rare
 
 Format your response to be clear and structured.`;
+
+      case 'conjugation':
+        return `${basePrompt}
+Analyze the conjugation used in context:
+1. Identify the specific conjugation form used in the text
+2. Show the conjugation chain:
+   - Start from dictionary form (辞書形)
+   - Show each transformation step
+   - End at the form used in context
+3. Explain each step:
+   - What conjugation rule was applied
+   - Why this form is used (meaning/purpose)
+4. Verb or adjective type (godan/ichidan for verbs, i-adjective/na-adjective for adjectives)
+5. Provide a usage example showing why this form fits the context
+
+Be clear and educational about the conjugation process.`;
 
       default:
         throw new ApplicationError('INVALID_ACTION', `Unknown action: ${params.action}`, 400);
@@ -337,9 +357,29 @@ Format your response to be clear and structured.`;
               type: 'string',
               description: 'Romaji reading',
             },
-            kanjiBreakdown: {
-              type: 'string',
-              description: 'Kanji breakdown with individual meanings',
+            kanjiAnalysis: {
+              type: 'object',
+              properties: {
+                kanji: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      character: { type: 'string', description: 'The kanji character' },
+                      meaning: { type: 'string', description: 'Meaning in this context' },
+                      etymology: { type: 'string', description: 'How the kanji is formed' },
+                      radicals: { type: 'string', description: 'Kanji radicals' },
+                    },
+                    required: ['character', 'meaning'],
+                  },
+                  description: 'Individual kanji analysis',
+                },
+                wordFormation: {
+                  type: 'string',
+                  description: 'How the kanji combine to form the word meaning',
+                },
+              },
+              description: 'Kanji etymology and formation analysis (only if word contains kanji)',
             },
             wordType: {
               type: 'string',
@@ -370,8 +410,54 @@ Format your response to be clear and structured.`;
               type: 'string',
               description: 'JLPT level if applicable (N5, N4, N3, N2, N1)',
             },
+            isCommon: {
+              type: 'boolean',
+              description: 'Whether the word is commonly used',
+            },
           },
           required: ['reading', 'meanings'],
+        };
+
+      case 'conjugation':
+        return {
+          type: 'object',
+          properties: {
+            formUsed: {
+              type: 'string',
+              description: 'The specific conjugation form used in the text',
+            },
+            dictionaryForm: {
+              type: 'string',
+              description: 'Dictionary form (辞書形) of the verb/adjective',
+            },
+            conjugationChain: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  form: { type: 'string', description: 'The form at this step' },
+                  rule: { type: 'string', description: 'Conjugation rule applied' },
+                  explanation: { type: 'string', description: 'Why this form is used' },
+                },
+                required: ['form', 'rule', 'explanation'],
+              },
+              description: 'Step-by-step conjugation chain from dictionary form to context form',
+            },
+            wordType: {
+              type: 'string',
+              description: 'Type: godan verb, ichidan verb, i-adjective, or na-adjective',
+            },
+            usageExample: {
+              type: 'object',
+              properties: {
+                japanese: { type: 'string' },
+                english: { type: 'string' },
+                explanation: { type: 'string' },
+              },
+              description: 'Example showing why this form fits the context',
+            },
+          },
+          required: ['formUsed', 'dictionaryForm', 'conjugationChain', 'wordType'],
         };
 
       default:

@@ -34,7 +34,7 @@ export const analyzeRoutes: FastifyPluginAsync = async (app) => {
           },
           action: {
             type: 'string',
-            enum: ['translate', 'explain', 'grammar', 'vocabulary'],
+            enum: ['translate', 'explain', 'grammar', 'vocabulary', 'conjugation'],
             description: 'Analysis action type',
           },
           context: {
@@ -60,7 +60,7 @@ export const analyzeRoutes: FastifyPluginAsync = async (app) => {
         },
       },
       // NOTE: MVP uses flexible response schema allowing any properties.
-      // Each action type (translate, explain, grammar, vocabulary) returns different structured data
+      // Each action type (translate, explain, grammar, vocabulary, conjugation) returns different structured data
       // as defined by getAnalysisSchema() in gemini.ts.
       // Future: Consider action-specific response schemas for API documentation
       // as defined in design/server-proxy.md lines 186-223

@@ -71,7 +71,7 @@ export interface IdentifyPhraseResponse {
   phrase: string;
   /** Romanized reading */
   romaji: string;
-  /** Bounding box coordinates (normalized 0-1000 relative to cropped image) */
+  /** Bounding box coordinates [y_min, x_min, y_max, x_max] (normalized 0-1000 relative to cropped image) */
   boundingBox: [number, number, number, number];
   /** Tokenized phrase */
   tokens: PhraseToken[];
@@ -84,7 +84,7 @@ export interface AnalyzeRequest {
   /** Japanese phrase to analyze */
   phrase: string;
   /** Analysis action type */
-  action: 'translate' | 'explain' | 'grammar' | 'vocabulary';
+  action: 'translate' | 'explain' | 'grammar' | 'vocabulary' | 'conjugation';
   /** Optional context */
   context?: {
     /** Full phrase if analyzing a subset */

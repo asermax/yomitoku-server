@@ -162,7 +162,17 @@ describe('POST /api/analyze', () => {
       const mockResult = {
         reading: 'たべる',
         romaji: 'taberu',
-        kanjiBreakdown: '食 (food, eat) + べる (auxiliary)',
+        kanjiAnalysis: {
+          kanji: [
+            {
+              character: '食',
+              meaning: 'food, eat',
+              etymology: 'Combination of person and good',
+              radicals: '人 (person) + 良 (good)',
+            },
+          ],
+          wordFormation: 'The kanji 食 represents the act of eating',
+        },
         wordType: 'ichidan verb',
         meanings: ['to eat', 'to consume'],
         collocations: ['ご飯を食べる', 'パンを食べる'],
@@ -173,6 +183,7 @@ describe('POST /api/analyze', () => {
           },
         ],
         jlptLevel: 'N5',
+        isCommon: true,
       };
 
       mockGeminiService.analyzeContent.mockResolvedValue(mockResult);
@@ -191,6 +202,60 @@ describe('POST /api/analyze', () => {
       expect(result).toHaveProperty('reading');
       expect(result).toHaveProperty('meanings');
       expect(Array.isArray(result.meanings)).toBe(true);
+      expect(result).toHaveProperty('kanjiAnalysis');
+      expect(result.kanjiAnalysis).toHaveProperty('kanji');
+      expect(Array.isArray(result.kanjiAnalysis.kanji)).toBe(true);
+    });
+  });
+
+  describe('conjugation action', () => {
+    it('should return 200 with conjugation data', async () => {
+      const mockResult = {
+        formUsed: 'te-form + imasu (present progressive)',
+        dictionaryForm: '食べる',
+        conjugationChain: [
+          {
+            form: '食べる',
+            rule: 'Dictionary form (辞書形)',
+            explanation: 'Base form of the verb',
+          },
+          {
+            form: '食べて',
+            rule: 'Te-form conjugation',
+            explanation: 'Used to connect actions or form progressive',
+          },
+          {
+            form: '食べています',
+            rule: 'Add います for present progressive',
+            explanation: 'Indicates ongoing action',
+          },
+        ],
+        wordType: 'ichidan verb',
+        usageExample: {
+          japanese: '今、ご飯を食べています',
+          english: 'I am eating now',
+          explanation: 'The te-form + imasu construction shows an action in progress',
+        },
+      };
+
+      mockGeminiService.analyzeContent.mockResolvedValue(mockResult);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: '食べています',
+          action: 'conjugation',
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const result = response.json();
+      expect(result).toHaveProperty('formUsed');
+      expect(result).toHaveProperty('dictionaryForm');
+      expect(result).toHaveProperty('conjugationChain');
+      expect(Array.isArray(result.conjugationChain)).toBe(true);
+      expect(result).toHaveProperty('wordType');
     });
   });
 
