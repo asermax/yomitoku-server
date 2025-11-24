@@ -77,6 +77,75 @@ export class GeminiService {
     });
   }
 
+  async identifyPhrases(params: {
+    screenshot: string;
+    maxPhrases?: number;
+  }) {
+    const maxPhrases = params.maxPhrases ?? 25;
+
+    if (maxPhrases < 1 || maxPhrases > 100) {
+      throw new ApplicationError(
+        'INVALID_REQUEST',
+        'maxPhrases must be between 1 and 100',
+        400,
+      );
+    }
+
+    const prompt = this.buildIdentifyPhrasesPrompt(maxPhrases);
+    const schema = this.getPhrasesSchema();
+
+    return callWithRetry(async () => {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: [{
+          parts: [
+            {
+              inlineData: {
+                data: params.screenshot,
+                mimeType: 'image/png',
+              },
+            },
+            { text: prompt },
+          ],
+        }],
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: schema,
+          temperature: 0.2,
+          thinkingConfig: {
+            thinkingLevel: ThinkingLevel.LOW,
+          },
+        },
+      });
+
+      this.logUsage('identify-phrases', response.usageMetadata);
+
+      if (!response.text) {
+        throw new ApplicationError(
+          'API_ERROR',
+          'Gemini API returned empty response',
+          502,
+        );
+      }
+
+      try {
+        return JSON.parse(response.text);
+      }
+      catch (parseError) {
+        this.logger.error({
+          responseText: response.text,
+          parseError,
+        }, 'Failed to parse Gemini API response');
+
+        throw new ApplicationError(
+          'API_ERROR',
+          'Invalid JSON response from Gemini API',
+          502,
+        );
+      }
+    });
+  }
+
   async analyzeContent(params: {
     phrase: string;
     action: string;
@@ -149,6 +218,28 @@ Provide precise bounding box coordinates in a normalized 0-1000 coordinate syste
 - 1000 represents the bottom-right corner
 - Coordinates are relative to this image's dimensions
 Tokenize the phrase into words with readings and romaji.
+    `.trim();
+  }
+
+  private buildIdentifyPhrasesPrompt(maxPhrases: number): string {
+    return `
+You are analyzing a full viewport screenshot of a Japanese webpage.
+
+Identify up to ${maxPhrases} distinct Japanese text phrases visible in this image.
+
+For each phrase:
+- Provide the complete Japanese text
+- Tokenize into words with readings and romaji
+- Provide precise bounding box coordinates as {x, y, width, height} in a normalized 0-1000 coordinate system:
+  - x: horizontal position from left edge (0 = left, 1000 = right)
+  - y: vertical position from top edge (0 = top, 1000 = bottom)
+  - width: horizontal extent (0-1000)
+  - height: vertical extent (0-1000)
+  - All coordinates relative to this full image's dimensions
+
+Focus on meaningful phrases (sentences, clauses, or standalone expressions), not individual words.
+Prioritize larger, more prominent text phrases.
+Return phrases in order of visual prominence (largest/most prominent first).
     `.trim();
   }
 
@@ -264,6 +355,45 @@ Be clear and educational about the conjugation process.`;
         },
       },
       required: ['phrase', 'romaji', 'boundingBox', 'tokens'],
+    };
+  }
+
+  private getPhrasesSchema() {
+    return {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          phrase: { type: 'string' },
+          romaji: { type: 'string' },
+          boundingBox: {
+            type: 'object',
+            properties: {
+              x: { type: 'number' },
+              y: { type: 'number' },
+              width: { type: 'number' },
+              height: { type: 'number' },
+            },
+            required: ['x', 'y', 'width', 'height'],
+          },
+          tokens: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                word: { type: 'string' },
+                reading: { type: 'string' },
+                romaji: { type: 'string' },
+                partOfSpeech: { type: 'array', items: { type: 'string' } },
+                hasKanji: { type: 'boolean' },
+                isCommon: { type: 'boolean' },
+              },
+              required: ['word', 'reading', 'romaji'],
+            },
+          },
+        },
+        required: ['phrase', 'romaji', 'boundingBox', 'tokens'],
+      },
     };
   }
 
