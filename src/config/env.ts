@@ -24,6 +24,8 @@ const schema = {
     },
     CHROME_EXTENSION_ID: { type: 'string' },
     MAX_IMAGE_SIZE: { type: 'number', default: 5242880 },
+    CACHE_TTL_SECONDS: { type: 'number', default: 3600 },
+    CACHE_MAX_ENTRIES: { type: 'number', default: 1000 },
   },
 } as const;
 
@@ -63,6 +65,8 @@ declare module 'fastify' {
       LOG_LEVEL: string;
       CHROME_EXTENSION_ID: string;
       MAX_IMAGE_SIZE: number;
+      CACHE_TTL_SECONDS: number;
+      CACHE_MAX_ENTRIES: number;
     };
   }
 }

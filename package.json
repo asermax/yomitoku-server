@@ -31,9 +31,11 @@
     "@fastify/rate-limit": "^10.1.1",
     "@google/genai": "^1.30.0",
     "fastify": "^5.2.0",
+    "lru-cache": "^11.2.2",
     "pino": "^9.5.0"
   },
   "devDependencies": {
+    "@types/lru-cache": "^7.10.9",
     "@types/node": "^20.17.9",
     "@typescript-eslint/eslint-plugin": "^8.16.0",
     "@typescript-eslint/parser": "^8.16.0",

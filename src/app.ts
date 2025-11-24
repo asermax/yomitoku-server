@@ -4,6 +4,7 @@ import { corsPlugin } from './plugins/cors.js';
 import { rateLimitPlugin } from './plugins/rate-limit.js';
 import { errorHandlerPlugin } from './plugins/error-handler.js';
 import { multipartPlugin } from './plugins/multipart.js';
+import { cachePlugin } from './plugins/cache.js';
 import { healthRoutes } from './routes/health.js';
 import { identifyPhraseRoutes } from './routes/identify-phrase.js';
 import { analyzeRoutes } from './routes/analyze.js';
@@ -47,6 +48,7 @@ export async function build(opts: FastifyServerOptions = {}) {
   await app.register(rateLimitPlugin);
   await app.register(errorHandlerPlugin);
   await app.register(multipartPlugin);
+  await app.register(cachePlugin);
 
   // Register routes
   await app.register(healthRoutes, { prefix: '/api' });

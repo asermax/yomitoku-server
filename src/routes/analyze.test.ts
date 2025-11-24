@@ -195,6 +195,10 @@ describe('POST /api/analyze', () => {
   });
 
   describe('context handling', () => {
+    beforeEach(() => {
+      app.analyzeCache.clear();
+    });
+
     it('should accept and pass fullPhrase context', async () => {
       mockGeminiService.analyzeContent.mockResolvedValue({
         translation: 'test',
@@ -422,6 +426,10 @@ describe('POST /api/analyze', () => {
   });
 
   describe('error handling', () => {
+    beforeEach(() => {
+      app.analyzeCache.clear();
+    });
+
     it('should handle ApplicationError from service', async () => {
       const { ApplicationError } = await import('../types/errors.js');
 
@@ -561,6 +569,264 @@ describe('POST /api/analyze', () => {
       expect(response.statusCode).toBe(500);
       const error = response.json();
       expect(error.message).toContain('Failed to analyze');
+    });
+  });
+
+  describe('caching', () => {
+    beforeEach(() => {
+      app.analyzeCache.clear();
+    });
+
+    it('should cache successful analyze results', async () => {
+      const mockResult = {
+        translation: 'Hello',
+        literalTranslation: 'Good day',
+      };
+
+      mockGeminiService.analyzeContent.mockResolvedValue(mockResult);
+
+      const response1 = await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+        },
+      });
+
+      expect(response1.statusCode).toBe(200);
+      expect(mockGeminiService.analyzeContent).toHaveBeenCalledTimes(1);
+
+      const response2 = await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+        },
+      });
+
+      expect(response2.statusCode).toBe(200);
+      expect(mockGeminiService.analyzeContent).toHaveBeenCalledTimes(1);
+      expect(response2.json()).toEqual(mockResult);
+    });
+
+    it('should use different cache keys for different phrases', async () => {
+      mockGeminiService.analyzeContent.mockResolvedValueOnce({ translation: 'Hello' });
+      mockGeminiService.analyzeContent.mockResolvedValueOnce({ translation: 'Goodbye' });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+        },
+      });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'さようなら',
+          action: 'translate',
+        },
+      });
+
+      expect(mockGeminiService.analyzeContent).toHaveBeenCalledTimes(2);
+    });
+
+    it('should use different cache keys for different action types', async () => {
+      mockGeminiService.analyzeContent.mockResolvedValueOnce({ translation: 'Hello' });
+      mockGeminiService.analyzeContent.mockResolvedValueOnce({ meaning: 'Greeting' });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+        },
+      });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'explain',
+        },
+      });
+
+      expect(mockGeminiService.analyzeContent).toHaveBeenCalledTimes(2);
+    });
+
+    it('should include fullPhrase in cache key', async () => {
+      mockGeminiService.analyzeContent.mockResolvedValueOnce({ translation: 'Hello' });
+      mockGeminiService.analyzeContent.mockResolvedValueOnce({ translation: 'Hello (with context)' });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+        },
+      });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+          context: {
+            fullPhrase: 'こんにちは、世界',
+          },
+        },
+      });
+
+      expect(mockGeminiService.analyzeContent).toHaveBeenCalledTimes(2);
+    });
+
+    it('should NOT include image in cache key', async () => {
+      const mockResult = { translation: 'Hello' };
+      mockGeminiService.analyzeContent.mockResolvedValue(mockResult);
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+          context: {
+            image: `data:image/png;base64,${validPngBase64}`,
+          },
+        },
+      });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+        },
+      });
+
+      expect(mockGeminiService.analyzeContent).toHaveBeenCalledTimes(1);
+    });
+
+    it('should NOT cache failed requests', async () => {
+      const { ApplicationError } = await import('../types/errors.js');
+
+      mockGeminiService.analyzeContent.mockRejectedValue(
+        new ApplicationError('API_ERROR', 'Test error', 500),
+      );
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+        },
+      });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+        },
+      });
+
+      expect(mockGeminiService.analyzeContent).toHaveBeenCalledTimes(2);
+    });
+
+    it('should track cache statistics', async () => {
+      mockGeminiService.analyzeContent.mockResolvedValue({ translation: 'Hello' });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+        },
+      });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+        },
+      });
+
+      const stats = app.analyzeCache.getStats();
+
+      expect(stats.hits).toBeGreaterThan(0);
+      expect(stats.misses).toBeGreaterThan(0);
+      expect(stats.size).toBeGreaterThan(0);
+    });
+  });
+
+  describe('GET /api/cache/stats', () => {
+    beforeEach(() => {
+      app.analyzeCache.clear();
+    });
+
+    it('should return cache statistics', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/cache/stats',
+      });
+
+      expect(response.statusCode).toBe(200);
+      const stats = response.json();
+
+      expect(stats).toHaveProperty('size');
+      expect(stats).toHaveProperty('maxSize');
+      expect(stats).toHaveProperty('hits');
+      expect(stats).toHaveProperty('misses');
+      expect(stats).toHaveProperty('hitRate');
+    });
+
+    it('should show correct statistics after cache usage', async () => {
+      mockGeminiService.analyzeContent.mockResolvedValue({ translation: 'Hello' });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+        },
+      });
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          phrase: 'こんにちは',
+          action: 'translate',
+        },
+      });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/cache/stats',
+      });
+
+      const stats = response.json();
+
+      expect(stats.size).toBe(1);
+      expect(stats.hits).toBe(1);
+      expect(stats.misses).toBe(1);
+      expect(stats.hitRate).toBe(0.5);
     });
   });
 });

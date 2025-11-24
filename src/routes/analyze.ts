@@ -153,6 +153,18 @@ export const analyzeRoutes: FastifyPluginAsync = async (app) => {
       imageData = base64Data;
     }
 
+    // Generate cache key (based on phrase + action + fullPhrase, NOT image)
+    const cacheKey = app.analyzeCache.generateKey(phrase, action, context?.fullPhrase);
+
+    // Check cache first
+    const cachedResult = app.analyzeCache.get(cacheKey);
+    if (cachedResult) {
+      app.log.debug({ cacheKey, action }, 'Cache hit for analyze request');
+      return cachedResult;
+    }
+
+    app.log.debug({ cacheKey, action }, 'Cache miss for analyze request');
+
     try {
       const result = await getGeminiService().analyzeContent({
         phrase,
@@ -162,6 +174,9 @@ export const analyzeRoutes: FastifyPluginAsync = async (app) => {
           image: imageData,
         },
       });
+
+      // Store in cache on success
+      app.analyzeCache.set(cacheKey, result);
 
       return result;
     }
