@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { FastifyInstance } from 'fastify';
 import { callWithRetry } from './retry.js';
 import { ApplicationError } from '../types/errors.js';
@@ -46,6 +46,9 @@ export class GeminiService {
           responseMimeType: 'application/json',
           responseSchema: schema,
           temperature: 0.2,
+          thinkingConfig: {
+            thinkingLevel: ThinkingLevel.LOW,
+          },
         },
       });
 
