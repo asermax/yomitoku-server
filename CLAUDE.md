@@ -269,6 +269,114 @@ Design files are documented in the "Design Documentation" section above. Refer t
 
 **Example:** Before implementing analyze endpoint → Read api-integration.md Phase 2 + server-proxy.md rate limiting → Verify current → Update if needed → Then implement
 
+### Track Documentation and Testing as Work
+
+**ALWAYS create beads for documentation updates and test additions.** These are not "extra work" - they are integral parts of completing a task.
+
+#### When Creating Implementation Beads
+
+**For ANY non-trivial implementation task (new features, refactoring, architectural changes), you MUST also create:**
+
+1. **Documentation bead(s)** - if the implementation affects design docs or CLAUDE.md
+2. **Test bead(s)** - if the implementation needs test coverage
+
+**Example workflow:**
+```bash
+# Main implementation task
+bd create "Extract image validation utility" -t task -p 1
+
+# Create dependent documentation task
+bd create "Update server-proxy.md with image validation utility pattern" -t task -p 1 --deps blocks:validation-impl-1
+
+# Create dependent test task (if not TDD)
+bd create "Add unit tests for image validation utility" -t task -p 1 --deps blocks:validation-impl-1
+```
+
+**With TDD:** Test bead should BLOCK the implementation bead (write tests first):
+```bash
+# Test bead created first
+bd create "Write unit tests for image validation utility (TDD)" -t task -p 1
+
+# Implementation bead blocked by tests
+bd create "Extract image validation utility" -t task -p 1 --deps blocks:test-bead-1
+```
+
+#### Documentation Bead Scope
+
+**CLAUDE.md updates:**
+- New patterns introduced (error handling, caching, service initialization)
+- Changed architectural decisions
+- New workflow practices
+- Configuration changes
+
+**Design doc updates** (`shin-sekai/01_Projects/yomitoku/design/`):
+- API endpoint changes
+- Architecture refactoring (decomposed services, new modules)
+- Data flow changes
+- New technology adoption
+
+**When to create:** If implementation changes high-level design or introduces new patterns worth documenting, create a documentation bead.
+
+#### Test Bead Scope
+
+**Always create test beads for:**
+- New utility functions or services
+- Refactored code that lacks test coverage
+- Bug fixes (test should reproduce bug first)
+- Complex business logic
+
+**TDD approach:** Test bead BLOCKS implementation bead (write failing test first, then make it pass)
+
+**Non-TDD approach:** Implementation bead BLOCKS test bead (write code first, then add tests)
+
+#### Dependency Modeling
+
+**Documentation updates:**
+- Use `blocks` relationship: Implementation blocks documentation update
+- Documentation can only be written AFTER implementation is complete
+- Ensures docs reflect actual implementation
+
+**Test additions (non-TDD):**
+- Use `blocks` relationship: Implementation blocks test addition
+- Tests written AFTER code is complete
+- Verifies implemented behavior
+
+**Test additions (TDD):**
+- Use `blocks` relationship: Test blocks implementation
+- Tests written FIRST, implementation makes them pass
+- TDD safety net
+
+**Example dependency chains:**
+
+**Non-TDD refactoring:**
+```
+[Refactor GeminiService] → blocks → [Add GeminiService unit tests]
+[Refactor GeminiService] → blocks → [Update architecture design doc]
+```
+
+**TDD new feature:**
+```
+[Write feature tests] → blocks → [Implement feature]
+[Implement feature] → blocks → [Update design doc]
+```
+
+#### Why This Matters
+
+**Without documentation beads:**
+- Design docs become stale and misleading
+- CLAUDE.md doesn't reflect current patterns
+- Architectural knowledge is lost
+
+**Without test beads:**
+- Test coverage gaps remain invisible
+- Refactoring lacks safety net
+- Technical debt accumulates
+
+**Tracking as beads:**
+- Makes work visible (not "invisible documentation debt")
+- Ensures completion (appears in `bd ready` when unblocked)
+- Models dependencies correctly (can't document before implementing)
+
 ### Code-Related Task Workflows
 
 When ANY task involves **code-related activities**, ALSO read these skills:
