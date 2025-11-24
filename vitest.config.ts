@@ -5,6 +5,9 @@ export default defineConfig({
     // Node.js environment for backend testing
     environment: 'node',
 
+    // Setup file
+    setupFiles: ['./src/test-setup.ts'],
+
     // Explicit imports preferred (better IDE support and type checking)
     globals: false,
 
