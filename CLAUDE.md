@@ -164,9 +164,9 @@ See `.env.example` for required configuration:
 ## Design Decisions
 
 ### Action Type Scope
-**Current MVP:** 4 analysis actions implemented (translate, explain, grammar, vocabulary).
+**Current MVP:** 5 analysis actions implemented (translate, explain, grammar, vocabulary, conjugation).
 
-**Final MVP Design:** 5 action types total
+**MVP Design Complete:** All 5 action types from final design are now implemented
 - **Phrase-level (3):** translate, explain, grammar
 - **Word-level (2):**
   - **vocabulary:** Enhanced with kanji etymology (radicals, how kanji form word meaning)
@@ -175,7 +175,7 @@ See `.env.example` for required configuration:
 **Removed from original design:** Standalone kanji action (merged into vocabulary), related vocabulary action (out of scope).
 
 ### Response Schema
-**GeminiService** implements detailed, action-specific schemas for all 4 MVP action types (translate, explain, grammar, vocabulary). Each action returns structured data with appropriate required/optional fields.
+**GeminiService** implements detailed, action-specific schemas for all 5 MVP action types (translate, explain, grammar, vocabulary, conjugation). Each action returns structured data with appropriate required/optional fields.
 
 **API route** uses flexible response schema (`additionalProperties: true`) to allow any properties through. This MVP approach prioritizes flexibility over strict API documentation. Future: Consider action-specific response schemas in OpenAPI/Swagger docs per design spec.
 
