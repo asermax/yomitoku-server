@@ -137,9 +137,10 @@ describe('Retry service', () => {
       const fn = vi.fn().mockRejectedValue({ status: 400, message: 'Bad request' });
 
       const promise = callWithRetry(fn);
+      const rejectPromise = expect(promise).rejects.toThrow(ApplicationError);
       await vi.runAllTimersAsync();
 
-      await expect(promise).rejects.toThrow(ApplicationError);
+      await rejectPromise;
       await expect(promise).rejects.toMatchObject({
         code: 'API_ERROR',
         message: 'Bad request',
@@ -152,9 +153,10 @@ describe('Retry service', () => {
       const fn = vi.fn().mockRejectedValue({ statusCode: 401, message: 'Unauthorized' });
 
       const promise = callWithRetry(fn);
+      const rejectPromise = expect(promise).rejects.toThrow(ApplicationError);
       await vi.runAllTimersAsync();
 
-      await expect(promise).rejects.toThrow(ApplicationError);
+      await rejectPromise;
       expect(fn).toHaveBeenCalledTimes(1);
     });
 
@@ -162,9 +164,10 @@ describe('Retry service', () => {
       const fn = vi.fn().mockRejectedValue({ status: 403, message: 'Forbidden' });
 
       const promise = callWithRetry(fn);
+      const rejectPromise = expect(promise).rejects.toThrow(ApplicationError);
       await vi.runAllTimersAsync();
 
-      await expect(promise).rejects.toThrow(ApplicationError);
+      await rejectPromise;
       expect(fn).toHaveBeenCalledTimes(1);
     });
 
@@ -172,9 +175,10 @@ describe('Retry service', () => {
       const fn = vi.fn().mockRejectedValue({ statusCode: 404, message: 'Not found' });
 
       const promise = callWithRetry(fn);
+      const rejectPromise = expect(promise).rejects.toThrow(ApplicationError);
       await vi.runAllTimersAsync();
 
-      await expect(promise).rejects.toThrow(ApplicationError);
+      await rejectPromise;
       expect(fn).toHaveBeenCalledTimes(1);
     });
   });
@@ -273,9 +277,10 @@ describe('Retry service', () => {
         backoffMultiplier: 2,
       });
 
+      const rejectPromise = expect(promise).rejects.toThrow(ApplicationError);
       await vi.runAllTimersAsync();
 
-      await expect(promise).rejects.toThrow(ApplicationError);
+      await rejectPromise;
       await expect(promise).rejects.toMatchObject({
         code: 'API_ERROR',
         message: 'Rate limited',
@@ -288,9 +293,10 @@ describe('Retry service', () => {
       const fn = vi.fn().mockRejectedValue({ statusCode: 503, message: 'Service unavailable' });
 
       const promise = callWithRetry(fn, { maxRetries: 1, initialDelay: 100, maxDelay: 32000, backoffMultiplier: 2 });
+      const rejectPromise = expect(promise).rejects.toThrow(ApplicationError);
       await vi.runAllTimersAsync();
 
-      await expect(promise).rejects.toThrow(ApplicationError);
+      await rejectPromise;
       await expect(promise).rejects.toMatchObject({
         code: 'API_ERROR',
         message: 'Service unavailable',
@@ -302,9 +308,10 @@ describe('Retry service', () => {
       const fn = vi.fn().mockRejectedValue({ statusCode: 503 });
 
       const promise = callWithRetry(fn, { maxRetries: 1, initialDelay: 100, maxDelay: 32000, backoffMultiplier: 2 });
+      const rejectPromise = expect(promise).rejects.toThrow(ApplicationError);
       await vi.runAllTimersAsync();
 
-      await expect(promise).rejects.toThrow(ApplicationError);
+      await rejectPromise;
       await expect(promise).rejects.toMatchObject({
         code: 'API_ERROR',
         message: 'Gemini API request failed',
@@ -318,9 +325,10 @@ describe('Retry service', () => {
       const fn = vi.fn().mockRejectedValue(new Error('Unknown error'));
 
       const promise = callWithRetry(fn, { maxRetries: 3, initialDelay: 100, maxDelay: 32000, backoffMultiplier: 2 });
+      const rejectPromise = expect(promise).rejects.toThrow(ApplicationError);
       await vi.runAllTimersAsync();
 
-      await expect(promise).rejects.toThrow(ApplicationError);
+      await rejectPromise;
       await expect(promise).rejects.toMatchObject({
         code: 'API_ERROR',
         message: 'Unknown error',
@@ -334,9 +342,10 @@ describe('Retry service', () => {
         .mockRejectedValueOnce(new Error('Something broke'));
 
       const promise = callWithRetry(fn, { maxRetries: 3, initialDelay: 100, maxDelay: 32000, backoffMultiplier: 2 });
+      const rejectPromise = expect(promise).rejects.toThrow(ApplicationError);
       await vi.runAllTimersAsync();
 
-      await expect(promise).rejects.toThrow(ApplicationError);
+      await rejectPromise;
       await expect(promise).rejects.toMatchObject({
         code: 'API_ERROR',
         message: 'Something broke',
@@ -356,9 +365,10 @@ describe('Retry service', () => {
         backoffMultiplier: 2,
       });
 
+      const rejectPromise = expect(promise).rejects.toThrow();
       await vi.runAllTimersAsync();
 
-      await expect(promise).rejects.toThrow();
+      await rejectPromise;
       expect(fn).toHaveBeenCalledTimes(6); // 1 initial + 5 retries
     });
 
@@ -413,7 +423,7 @@ describe('Retry service', () => {
   });
 
   describe('Edge cases', () => {
-    it('should handle error with both status and statusCode properties', async () => {
+    it('should prioritize statusCode over status over code', async () => {
       const fn = vi.fn()
         .mockRejectedValueOnce({
           status: 400,
@@ -431,26 +441,66 @@ describe('Retry service', () => {
       expect(fn).toHaveBeenCalledTimes(2);
     });
 
-    it('should handle error with code property', async () => {
-      const fn = vi.fn()
-        .mockRejectedValueOnce({ code: 503, message: 'Service error' })
-        .mockResolvedValue('success');
+    it('should use status when statusCode is missing - permanent error', async () => {
+      const fn = vi.fn().mockRejectedValue({
+        status: 400,
+        code: 429,
+        message: 'Should not retry',
+      });
 
       const promise = callWithRetry(fn);
+      const rejectPromise = expect(promise).rejects.toThrow(ApplicationError);
       await vi.runAllTimersAsync();
 
+      // Should use status (400) - permanent, no retry
+      await rejectPromise;
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    it('should use status when statusCode is missing - transient error', async () => {
+      const fn = vi.fn()
+        .mockRejectedValueOnce({
+          status: 503,
+          code: 400,
+          message: 'Should retry',
+        })
+        .mockResolvedValue('success');
+
+      const promise = callWithRetry(fn, { maxRetries: 3, initialDelay: 100, maxDelay: 32000, backoffMultiplier: 2 });
+      await vi.runAllTimersAsync();
+
+      // Should use status (503) - transient, retries
       const result = await promise;
       expect(result).toBe('success');
       expect(fn).toHaveBeenCalledTimes(2);
     });
 
+    it('should use code when both statusCode and status are missing', async () => {
+      const fn = vi.fn()
+        .mockRejectedValueOnce({
+          code: 429,
+          message: 'Should retry based on code',
+        })
+        .mockResolvedValue('success');
+
+      const promise = callWithRetry(fn, { maxRetries: 3, initialDelay: 100, maxDelay: 32000, backoffMultiplier: 2 });
+      await vi.runAllTimersAsync();
+
+      // Should use code (429) - transient, retries
+      const result = await promise;
+      expect(result).toBe('success');
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+
+
     it('should handle null/undefined error properties gracefully', async () => {
       const fn = vi.fn().mockRejectedValue({ statusCode: null, message: null, name: null });
 
       const promise = callWithRetry(fn, { maxRetries: 1, initialDelay: 100, maxDelay: 32000, backoffMultiplier: 2 });
+      const rejectPromise = expect(promise).rejects.toThrow(ApplicationError);
       await vi.runAllTimersAsync();
 
-      await expect(promise).rejects.toThrow(ApplicationError);
+      await rejectPromise;
       await expect(promise).rejects.toMatchObject({
         code: 'API_ERROR',
         message: 'Gemini API request failed',
