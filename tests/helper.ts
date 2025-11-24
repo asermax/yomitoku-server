@@ -38,16 +38,11 @@ export const validJpegBase64 = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJ
 /**
  * Create a valid identify-phrase request payload
  * Image is pre-cropped to selection on client side
+ * Note: Selection dimensions removed in breaking API change (2024-11-24)
+ * Server now receives only cropped images and returns normalized 0-1000 coordinates
  */
 export const createIdentifyPhrasePayload = (overrides?: any) => ({
   image: `data:image/png;base64,${validPngBase64}`,
-  selection: {
-    x: 100,
-    y: 200,
-    width: 300,
-    height: 100,
-    devicePixelRatio: 2,
-  },
   ...overrides,
 });
 

@@ -78,22 +78,7 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
         method: 'POST',
         url: '/api/identify-phrase',
         payload: {
-          selection: createIdentifyPhrasePayload().selection,
           // image missing
-        },
-      });
-
-      expect(response.statusCode).toBe(400);
-      expect(mockGeminiService.identifyPhrase).not.toHaveBeenCalled();
-    });
-
-    it('should return 400 for missing selection', async () => {
-      const response = await app.inject({
-        method: 'POST',
-        url: '/api/identify-phrase',
-        payload: {
-          image: createIdentifyPhrasePayload().image,
-          // selection missing
         },
       });
 
@@ -129,47 +114,8 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       expect(error.message).toContain('PNG');
     });
 
-    it('should return 400 for negative selection coordinates', async () => {
-      const response = await app.inject({
-        method: 'POST',
-        url: '/api/identify-phrase',
-        payload: createIdentifyPhrasePayload({
-          selection: {
-            x: -10,
-            y: 200,
-            width: 300,
-            height: 100,
-            viewportWidth: 1920,
-            viewportHeight: 1080,
-            devicePixelRatio: 2,
-          },
-        }),
-      });
-
-      expect(response.statusCode).toBe(400);
-      expect(mockGeminiService.identifyPhrase).not.toHaveBeenCalled();
-    });
-
-    it('should return 400 for zero-width selection', async () => {
-      const response = await app.inject({
-        method: 'POST',
-        url: '/api/identify-phrase',
-        payload: createIdentifyPhrasePayload({
-          selection: {
-            x: 100,
-            y: 200,
-            width: 0,
-            height: 100,
-            viewportWidth: 1920,
-            viewportHeight: 1080,
-            devicePixelRatio: 2,
-          },
-        }),
-      });
-
-      expect(response.statusCode).toBe(400);
-      expect(mockGeminiService.identifyPhrase).not.toHaveBeenCalled();
-    });
+    // Note: Selection validation tests removed in breaking API change (2024-11-24)
+    // Server no longer validates selection dimensions - client handles denormalization
   });
 
   describe('error handling', () => {
