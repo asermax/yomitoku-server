@@ -3,6 +3,7 @@ import { envPlugin } from './config/env.js';
 import { corsPlugin } from './plugins/cors.js';
 import { rateLimitPlugin } from './plugins/rate-limit.js';
 import { errorHandlerPlugin } from './plugins/error-handler.js';
+import { authPlugin } from './plugins/auth.js';
 import { multipartPlugin } from './plugins/multipart.js';
 import { cachePlugin } from './plugins/cache.js';
 import { healthRoutes } from './routes/health.js';
@@ -48,6 +49,7 @@ export async function build(opts: FastifyServerOptions = {}) {
   await app.register(corsPlugin);
   await app.register(rateLimitPlugin);
   await app.register(errorHandlerPlugin);
+  await app.register(authPlugin);
   await app.register(multipartPlugin);
   await app.register(cachePlugin);
 

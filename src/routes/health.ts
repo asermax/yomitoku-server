@@ -16,6 +16,7 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
     },
     config: {
       rateLimit: false, // No rate limiting on health checks
+      skipAuth: true, // No authentication required for health checks
     },
   }, async (request, reply) => {
     return {

@@ -4,8 +4,9 @@ import fastifyEnv from '@fastify/env';
 
 const schema = {
   type: 'object',
-  required: ['GEMINI_API_KEY'],
+  required: ['GEMINI_API_KEY', 'API_KEY'],
   properties: {
+    API_KEY: { type: 'string', minLength: 1 },
     GEMINI_API_KEY: { type: 'string', minLength: 1 },
     GEMINI_API_VERSION: { type: 'string', default: 'v1' },
     PORT: { type: 'number', default: 3000 },
@@ -55,6 +56,7 @@ export const envPlugin = fastifyPlugin(envPluginImpl);
 declare module 'fastify' {
   interface FastifyInstance {
     config: {
+      API_KEY: string;
       GEMINI_API_KEY: string;
       GEMINI_API_VERSION: string;
       PORT: number;

@@ -31,7 +31,7 @@ export const corsPlugin: FastifyPluginAsync = async (app) => {
     },
     credentials: true,
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
     exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining'],
     maxAge: 86400,
     preflight: true,
