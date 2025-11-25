@@ -35,7 +35,6 @@ describe('Server configuration loading', () => {
     it('should apply default values when optional variables are not set', async () => {
       vi.stubEnv('API_KEY', 'test-api-key');
       vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
-      vi.stubEnv('API_KEY', 'test-api-key');
       // Note: Can't test PORT default because .env file loads after stubEnv
       // and overrides with PORT=3001. In real scenarios without .env, default would be 3000.
       // Testing actual .env value instead.
