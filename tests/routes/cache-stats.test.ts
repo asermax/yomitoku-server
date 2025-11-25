@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { buildTestApp, mockGeminiService, createAnalyzePayload } from '../helper.js';
+import { buildTestApp, mockGeminiService, createAnalyzePayload, TEST_API_KEY } from '../helper.js';
 
 describe('GET /api/cache/stats - Integration Tests', () => {
   let app: Awaited<ReturnType<typeof buildTestApp>>;
@@ -70,6 +70,9 @@ describe('GET /api/cache/stats - Integration Tests', () => {
     await app.inject({
       method: 'POST',
       url: '/api/analyze',
+      headers: {
+        'x-api-key': TEST_API_KEY,
+      },
       payload: createAnalyzePayload({
         phrase: 'こんにちは',
         action: 'translate',
@@ -101,6 +104,9 @@ describe('GET /api/cache/stats - Integration Tests', () => {
     await app.inject({
       method: 'POST',
       url: '/api/analyze',
+      headers: {
+        'x-api-key': TEST_API_KEY,
+      },
       payload,
     });
 
@@ -108,6 +114,9 @@ describe('GET /api/cache/stats - Integration Tests', () => {
     await app.inject({
       method: 'POST',
       url: '/api/analyze',
+      headers: {
+        'x-api-key': TEST_API_KEY,
+      },
       payload,
     });
 
@@ -136,6 +145,9 @@ describe('GET /api/cache/stats - Integration Tests', () => {
     await app.inject({
       method: 'POST',
       url: '/api/analyze',
+      headers: {
+        'x-api-key': TEST_API_KEY,
+      },
       payload,
     });
 
@@ -143,6 +155,9 @@ describe('GET /api/cache/stats - Integration Tests', () => {
     await app.inject({
       method: 'POST',
       url: '/api/analyze',
+      headers: {
+        'x-api-key': TEST_API_KEY,
+      },
       payload,
     });
 

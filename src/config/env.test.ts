@@ -17,6 +17,7 @@ describe('Server configuration loading', () => {
 
   describe('Environment variable loading', () => {
     it('should load configuration with valid environment variables', async () => {
+      vi.stubEnv('API_KEY', 'test-api-key');
       vi.stubEnv('GEMINI_API_KEY', 'test-api-key-123');
       vi.stubEnv('NODE_ENV', 'test');
       vi.stubEnv('PORT', '4000');
@@ -32,7 +33,9 @@ describe('Server configuration loading', () => {
     });
 
     it('should apply default values when optional variables are not set', async () => {
+      vi.stubEnv('API_KEY', 'test-api-key');
       vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('API_KEY', 'test-api-key');
       // Note: Can't test PORT default because .env file loads after stubEnv
       // and overrides with PORT=3001. In real scenarios without .env, default would be 3000.
       // Testing actual .env value instead.
@@ -56,6 +59,7 @@ describe('Server configuration loading', () => {
 
     it('should fail startup when GEMINI_API_KEY is empty', async () => {
       vi.stubEnv('GEMINI_API_KEY', '');
+      vi.stubEnv('API_KEY', 'test-api-key');
 
       await expect(build()).rejects.toThrow(/GEMINI_API_KEY|required/i);
     });
@@ -64,7 +68,7 @@ describe('Server configuration loading', () => {
 
   describe('Production environment validation', () => {
     it('should accept CHROME_EXTENSION_ID in production', async () => {
-      vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('API_KEY', 'test-api-key');
       vi.stubEnv('NODE_ENV', 'production');
       vi.stubEnv('CHROME_EXTENSION_ID', 'test-extension-id');
 
@@ -77,6 +81,7 @@ describe('Server configuration loading', () => {
 
     it('should not require CHROME_EXTENSION_ID in development', async () => {
       vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('API_KEY', 'test-api-key');
       vi.stubEnv('NODE_ENV', 'development');
       vi.stubEnv('CHROME_EXTENSION_ID', undefined);
 
@@ -88,6 +93,7 @@ describe('Server configuration loading', () => {
 
     it('should not require CHROME_EXTENSION_ID in test', async () => {
       vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('API_KEY', 'test-api-key');
       vi.stubEnv('NODE_ENV', 'test');
       vi.stubEnv('CHROME_EXTENSION_ID', undefined);
 
@@ -99,6 +105,7 @@ describe('Server configuration loading', () => {
 
     it('should fail startup in production when CHROME_EXTENSION_ID is empty', async () => {
       vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('API_KEY', 'test-api-key');
       vi.stubEnv('NODE_ENV', 'production');
       vi.stubEnv('CHROME_EXTENSION_ID', '');
 
@@ -122,6 +129,7 @@ describe('Server configuration loading', () => {
   describe('Configuration accessibility', () => {
     it('should make config accessible after app.ready()', async () => {
       vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('API_KEY', 'test-api-key');
 
       app = await build();
       await app.ready();
@@ -132,6 +140,7 @@ describe('Server configuration loading', () => {
 
     it('should parse numeric environment variables correctly', async () => {
       vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('API_KEY', 'test-api-key');
       vi.stubEnv('PORT', '8080');
       vi.stubEnv('RATE_LIMIT_WINDOW_MS', '7200000');
       vi.stubEnv('RATE_LIMIT_MAX_REQUESTS', '50');
@@ -150,6 +159,7 @@ describe('Server configuration loading', () => {
   describe('Configuration enum validation', () => {
     it('should accept valid NODE_ENV values', async () => {
       vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('API_KEY', 'test-api-key');
 
       for (const env of ['development', 'production', 'test']) {
         vi.stubEnv('NODE_ENV', env);
@@ -165,6 +175,7 @@ describe('Server configuration loading', () => {
 
     it('should accept valid LOG_LEVEL values', async () => {
       vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('API_KEY', 'test-api-key');
 
       for (const level of ['fatal', 'error', 'warn', 'info', 'debug', 'trace']) {
         vi.stubEnv('LOG_LEVEL', level);
@@ -180,6 +191,7 @@ describe('Server configuration loading', () => {
 
     it('should reject invalid NODE_ENV values', async () => {
       vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('API_KEY', 'test-api-key');
       vi.stubEnv('NODE_ENV', 'staging');
 
       await expect(build()).rejects.toThrow(/NODE_ENV|enum|staging/i);
@@ -187,6 +199,7 @@ describe('Server configuration loading', () => {
 
     it('should reject invalid LOG_LEVEL values', async () => {
       vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+      vi.stubEnv('API_KEY', 'test-api-key');
       vi.stubEnv('LOG_LEVEL', 'verbose');
 
       await expect(build()).rejects.toThrow(/LOG_LEVEL|enum|verbose/i);

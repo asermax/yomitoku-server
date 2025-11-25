@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { buildTestApp, mockGeminiService, createAnalyzePayload, validPngBase64 } from '../helper.js';
+import { buildTestApp, mockGeminiService, createAnalyzePayload, validPngBase64, TEST_API_KEY } from '../helper.js';
 
 describe('POST /api/analyze - Integration Tests', () => {
   let app: Awaited<ReturnType<typeof buildTestApp>>;
@@ -32,6 +32,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: 'こんにちは',
           action: 'translate',
@@ -50,6 +53,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: '食べる',
           action: 'translate',
@@ -70,6 +76,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: 'こんにちは',
           action: 'translate',
@@ -95,6 +104,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: 'ありがとう',
           action: 'explain',
@@ -130,6 +142,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: '食べます',
           action: 'grammar',
@@ -161,6 +176,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: '食べる',
           action: 'vocabulary',
@@ -207,6 +225,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: '食べている',
           action: 'conjugation',
@@ -223,6 +244,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: {
           action: 'translate',
           // phrase missing
@@ -237,6 +261,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: {
           phrase: 'こんにちは',
           // action missing
@@ -251,6 +278,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           action: 'invalid_action' as any,
         }),
@@ -267,6 +297,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: longPhrase,
         }),
@@ -284,6 +317,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: uniquePhrase,
           context: {
@@ -304,6 +340,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: uniquePhrase,
           context: {
@@ -332,6 +371,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: uniquePhrase,
         }),
@@ -354,6 +396,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: uniquePhrase,
         }),
@@ -376,6 +421,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: uniquePhrase,
         }),
@@ -397,6 +445,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: uniquePhrase,
         }),
@@ -418,6 +469,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload({
           phrase: `test-rate-${Date.now()}`,
         }),
@@ -457,6 +511,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createAnalyzePayload(),
       });
 
@@ -483,6 +540,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response1 = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload,
       });
 
@@ -493,6 +553,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response2 = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload,
       });
 
@@ -518,6 +581,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response1 = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload,
       });
 
@@ -528,6 +594,9 @@ describe('POST /api/analyze - Integration Tests', () => {
       const response2 = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload,
       });
 

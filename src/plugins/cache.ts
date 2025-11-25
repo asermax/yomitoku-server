@@ -10,7 +10,9 @@ const cachePluginImpl: FastifyPluginAsync = async (app) => {
 
   app.decorate('analyzeCache', cacheService);
 
-  app.get('/api/cache/stats', async () => {
+  app.get('/api/cache/stats', {
+    config: { skipAuth: true },
+  }, async () => {
     return cacheService.getStats();
   });
 };

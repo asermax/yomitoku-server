@@ -17,6 +17,7 @@ vi.mock('../services/gemini.js', () => ({
 
 describe('POST /api/identify-phrase', () => {
   let app: Awaited<ReturnType<typeof build>>;
+  const validApiKey = 'test-api-key-12345';
 
   // Valid PNG base64 (1x1 transparent PNG)
   const validPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
@@ -28,12 +29,15 @@ describe('POST /api/identify-phrase', () => {
   };
 
   beforeAll(async () => {
+    // Set API_KEY environment variable for tests
+    process.env.API_KEY = validApiKey;
     app = await build();
     await app.ready();
   });
 
   afterAll(async () => {
     await app.close();
+    delete process.env.API_KEY;
   });
 
   beforeEach(() => {
@@ -62,6 +66,9 @@ describe('POST /api/identify-phrase', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload: validPayload,
     });
 
@@ -97,6 +104,9 @@ describe('POST /api/identify-phrase', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload: validPayload,
     });
 
@@ -153,6 +163,9 @@ describe('POST /api/identify-phrase', () => {
     await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload: validPayload,
     });
 
@@ -178,6 +191,9 @@ describe('POST /api/identify-phrase', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload,
     });
 
@@ -193,6 +209,9 @@ describe('POST /api/identify-phrase', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload,
     });
 
@@ -209,6 +228,9 @@ describe('POST /api/identify-phrase', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload,
     });
 
@@ -229,6 +251,9 @@ describe('POST /api/identify-phrase', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload,
     });
 
@@ -250,6 +275,9 @@ describe('POST /api/identify-phrase', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload,
     });
 
@@ -283,6 +311,9 @@ describe('POST /api/identify-phrase', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload: validPayload,
     });
 
@@ -300,6 +331,9 @@ describe('POST /api/identify-phrase', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload: validPayload,
     });
 
@@ -317,6 +351,9 @@ describe('POST /api/identify-phrase', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload: validPayload,
     });
 
@@ -333,6 +370,9 @@ describe('POST /api/identify-phrase', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload: validPayload,
     });
 
@@ -360,6 +400,9 @@ describe('POST /api/identify-phrase', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/identify-phrase',
+      headers: {
+        'x-api-key': validApiKey,
+      },
       payload,
     });
 

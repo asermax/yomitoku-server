@@ -2,6 +2,11 @@ import { vi } from 'vitest';
 import { build } from '../src/app.js';
 
 /**
+ * Test API key for authentication tests
+ */
+export const TEST_API_KEY = 'test-api-key-12345';
+
+/**
  * Mock GeminiService for integration tests
  * Use this to avoid real API calls while testing full request/response flow
  */
@@ -21,6 +26,11 @@ vi.mock('../src/services/gemini.js', () => ({
  * This creates a real app instance for integration testing
  */
 export const buildTestApp = async () => {
+  // Set API_KEY for authentication tests
+  if (!process.env.API_KEY) {
+    process.env.API_KEY = TEST_API_KEY;
+  }
+
   const app = await build();
   await app.ready();
   return app;

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { buildTestApp, mockGeminiService, createIdentifyPhrasePayload, validJpegBase64 } from '../helper.js';
+import { buildTestApp, mockGeminiService, createIdentifyPhrasePayload, validJpegBase64, TEST_API_KEY } from '../helper.js';
 
 describe('POST /api/identify-phrase - Integration Tests', () => {
   let app: Awaited<ReturnType<typeof buildTestApp>>;
@@ -40,6 +40,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/identify-phrase',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createIdentifyPhrasePayload(),
       });
 
@@ -65,6 +68,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/identify-phrase',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload,
       });
 
@@ -77,6 +83,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/identify-phrase',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: {
           // image missing
         },
@@ -90,6 +99,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/identify-phrase',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createIdentifyPhrasePayload({
           image: 'not-valid-base64!!!',
         }),
@@ -104,6 +116,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/identify-phrase',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createIdentifyPhrasePayload({
           image: `data:image/jpeg;base64,${validJpegBase64}`,
         }),
@@ -129,6 +144,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/identify-phrase',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createIdentifyPhrasePayload(),
       });
 
@@ -146,6 +164,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/identify-phrase',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createIdentifyPhrasePayload(),
       });
 
@@ -163,6 +184,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/identify-phrase',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createIdentifyPhrasePayload(),
       });
 
@@ -179,6 +203,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/identify-phrase',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createIdentifyPhrasePayload(),
       });
 
@@ -203,6 +230,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/identify-phrase',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload,
       });
 
@@ -243,6 +273,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/identify-phrase',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
         payload: createIdentifyPhrasePayload(),
       });
 

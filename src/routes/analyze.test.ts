@@ -17,17 +17,21 @@ vi.mock('../services/gemini.js', () => ({
 
 describe('POST /api/analyze', () => {
   let app: Awaited<ReturnType<typeof build>>;
+  const validApiKey = 'test-api-key-12345';
 
   // Valid PNG base64 (1x1 transparent PNG)
   const validPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
   beforeAll(async () => {
+    // Set API_KEY environment variable for tests
+    process.env.API_KEY = validApiKey;
     app = await build();
     await app.ready();
   });
 
   afterAll(async () => {
     await app.close();
+    delete process.env.API_KEY;
   });
 
   beforeEach(() => {
@@ -47,6 +51,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -69,6 +76,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'ありがとう',
           action: 'translate',
@@ -100,6 +110,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'ありがとうございます',
           action: 'explain',
@@ -143,6 +156,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: '食べています',
           action: 'grammar',
@@ -191,6 +207,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: '食べる',
           action: 'vocabulary',
@@ -243,6 +262,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: '食べています',
           action: 'conjugation',
@@ -272,6 +294,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: '食べる',
           action: 'translate',
@@ -299,6 +324,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: '食べる',
           action: 'translate',
@@ -326,6 +354,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: '食べる',
           action: 'translate',
@@ -345,6 +376,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           action: 'translate',
         },
@@ -358,6 +392,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
         },
@@ -371,6 +408,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: '   ',
           action: 'translate',
@@ -388,6 +428,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: longPhrase,
           action: 'translate',
@@ -401,6 +444,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'invalid_action',
@@ -414,6 +460,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -432,6 +481,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -453,6 +505,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -474,6 +529,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -505,6 +563,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -525,6 +586,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -547,6 +611,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -566,6 +633,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'test phrase',
           action: 'translate',
@@ -586,6 +656,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -606,6 +679,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -625,6 +701,9 @@ describe('POST /api/analyze', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -653,6 +732,9 @@ describe('POST /api/analyze', () => {
       const response1 = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -665,6 +747,9 @@ describe('POST /api/analyze', () => {
       const response2 = await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -683,6 +768,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -692,6 +780,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'さようなら',
           action: 'translate',
@@ -708,6 +799,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -717,6 +811,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'explain',
@@ -733,6 +830,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -742,6 +842,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -761,6 +864,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -773,6 +879,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -792,6 +901,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -801,6 +913,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -816,6 +931,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -825,6 +943,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -866,6 +987,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',
@@ -875,6 +999,9 @@ describe('POST /api/analyze', () => {
       await app.inject({
         method: 'POST',
         url: '/api/analyze',
+        headers: {
+          'x-api-key': validApiKey,
+        },
         payload: {
           phrase: 'こんにちは',
           action: 'translate',

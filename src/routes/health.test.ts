@@ -5,12 +5,15 @@ describe('Health endpoint', () => {
   let app: Awaited<ReturnType<typeof build>>;
 
   beforeAll(async () => {
+    // Set API_KEY environment variable for tests
+    process.env.API_KEY = 'test-api-key';
     app = await build();
     await app.ready();
   });
 
   afterAll(async () => {
     await app.close();
+    delete process.env.API_KEY;
   });
 
   it('should return 200 status code', async () => {
