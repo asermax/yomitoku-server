@@ -150,6 +150,49 @@ afterAll(async () => {
 
 **Do NOT cache** `/api/identify-phrase` endpoint - image variations prevent effective caching.
 
+### 9. Authentication Pattern
+
+**Global Authentication**: All endpoints require valid `x-api-key` header by default.
+
+**Opt-Out Configuration**: Public endpoints disable authentication via route config:
+```typescript
+app.get('/public-endpoint', {
+  config: { skipAuth: true },
+}, handler);
+```
+
+**Security Implementation**:
+- Constant-time comparison using `crypto.timingSafeEqual` prevents timing attacks
+- Identical error responses for all failure scenarios prevent information disclosure
+- API keys automatically redacted from all logs
+
+**Header Format**: `x-api-key: <base64-encoded-256-bit-key>`
+
+**Testing Requirements**: All protected endpoint tests must include `x-api-key` header:
+```typescript
+beforeAll(async () => {
+  process.env.API_KEY = 'test-api-key';
+  app = await build();
+  await app.ready();
+});
+
+// In test requests
+await app.inject({
+  method: 'POST',
+  url: '/api/analyze',
+  headers: {
+    'x-api-key': process.env.API_KEY,
+    'content-type': 'application/json',
+  },
+  payload: JSON.stringify({ ... }),
+});
+```
+
+**Plugin Architecture**:
+- Fastify plugin wrapped with `fastify-plugin` for global scope
+- Registered after error handler, before routes
+- Uses `preHandler` hook to check authentication before route handlers execute
+
 ## Development
 
 ```bash
@@ -162,7 +205,8 @@ npm run test         # Run tests
 ## Environment Variables
 
 See `.env.example` for required configuration:
-- `GEMINI_API_KEY` - Gemini API key
+- `API_KEY` - API key for authenticating Chrome extension requests (REQUIRED)
+- `GEMINI_API_KEY` - Gemini API key (REQUIRED)
 - `PORT` - Server port
 - `NODE_ENV` - Environment (development/production)
 - `RATE_LIMIT_MAX_REQUESTS` - Requests per hour
