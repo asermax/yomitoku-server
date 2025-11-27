@@ -217,7 +217,18 @@ Provide precise bounding box coordinates in a normalized 0-1000 coordinate syste
 - 0 represents the top-left corner
 - 1000 represents the bottom-right corner
 - Coordinates are relative to this image's dimensions
-Tokenize the phrase into words with readings, romaji, partOfSpeech (array of tags like verb, noun, adjective, particle), and hasKanji (boolean - true if word contains kanji).
+
+Tokenize the phrase into words following these rules for language learners:
+- Keep conjugated verbs as single tokens (e.g., 食べられなかった not 食べ/られ/なかっ/た)
+- Keep conjugated adjectives as single tokens (e.g., 美しくなかった not 美しく/なかっ/た)
+- Keep compound nouns together (e.g., 日本語 not 日本/語)
+- Keep adverbial expressions together (e.g., 逆に not 逆/に, 特に not 特/に)
+- Keep verb + auxiliary patterns together when they form a single grammatical unit
+- Keep common expressions like みたいな, ような, らしい as single tokens
+- Particles (は, が, を, に, で, etc.) should be separate tokens UNLESS part of a set phrase
+- The goal is meaningful units a learner would look up in a dictionary or study as vocabulary
+
+For each token provide: word, reading (hiragana/katakana), romaji, partOfSpeech (array of tags like verb, noun, adjective, particle), hasKanji (boolean - true if word contains kanji), and isCommon (boolean - true if commonly used).
     `.trim();
   }
 
@@ -229,7 +240,16 @@ Identify up to ${maxPhrases} distinct Japanese text phrases visible in this imag
 
 For each phrase:
 - Provide the complete Japanese text
-- Tokenize into words with readings, romaji, partOfSpeech (array of tags like verb, noun, adjective, particle), and hasKanji (boolean - true if word contains kanji)
+- Tokenize into words following these rules for language learners:
+  - Keep conjugated verbs as single tokens (e.g., 食べられなかった not 食べ/られ/なかっ/た)
+  - Keep conjugated adjectives as single tokens (e.g., 美しくなかった not 美しく/なかっ/た)
+  - Keep compound nouns together (e.g., 日本語 not 日本/語)
+  - Keep adverbial expressions together (e.g., 逆に not 逆/に, 特に not 特/に)
+  - Keep verb + auxiliary patterns together when they form a single grammatical unit
+  - Keep common expressions like みたいな, ような, らしい as single tokens
+  - Particles (は, が, を, に, で, etc.) should be separate tokens UNLESS part of a set phrase
+  - The goal is meaningful units a learner would look up in a dictionary or study as vocabulary
+- For each token provide: word, reading (hiragana/katakana), romaji, partOfSpeech (array of tags like verb, noun, adjective, particle), hasKanji (boolean - true if word contains kanji), and isCommon (boolean - true if commonly used)
 - Provide precise bounding box coordinates as [y_min, x_min, y_max, x_max] in a normalized 0-1000 coordinate system:
   - All values are 0-1000 scale relative to this full image's dimensions
   - y_min: top edge of bounding box
