@@ -74,21 +74,21 @@ export const categorizeApiError = (
 
   // Timeout errors
   if (errorCode === 'ETIMEDOUT' || errorMessage.includes('timeout')) {
-    const timeoutMessages = {
+    const timeoutMessages: Record<ErrorContext, string> = {
       'identify phrase': 'Request timed out. Please try again with a smaller image or selection.',
       'identify phrases': 'Request timed out. Please try again with a smaller image or fewer phrases.',
       'analyze': 'Request timed out. Please try again.',
-    } as const;
+    };
 
     return new ApplicationError('TIMEOUT', timeoutMessages[context], 504);
   }
 
   // Generic error - different messages per context
-  const contextMessages = {
+  const contextMessages: Record<ErrorContext, string> = {
     'identify phrase': 'Failed to identify phrase from screenshot',
     'identify phrases': 'Failed to identify phrases from screenshot',
     'analyze': 'Failed to analyze phrase',
-  } as const;
+  };
 
   return new ApplicationError(
     'API_ERROR',
