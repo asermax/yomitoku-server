@@ -327,19 +327,29 @@ Format all text fields using markdown. Highlight kanji characters, meanings, and
 
       case 'conjugation':
         return `${basePrompt}
-Analyze the conjugation used in context:
-1. Identify the specific conjugation form used in the text
-2. Show the conjugation chain:
-   - Start from dictionary form (辞書形)
-   - Show each transformation step
-   - End at the form used in context
-3. Explain each step:
-   - What conjugation rule was applied
-   - Why this form is used (meaning/purpose)
-4. Verb or adjective type (godan/ichidan for verbs, i-adjective/na-adjective for adjectives)
-5. Provide a usage example showing why this form fits the context
+Analyze the conjugation used in context and provide a structured JSON response with these fields:
 
-Format all text fields using markdown. Highlight conjugation forms and transformation steps.`;
+1. formUsed: The specific conjugation form used in the text
+2. dictionaryForm: Dictionary form (辞書形) of the verb/adjective
+3. conjugationChain: Array of transformation steps, where each step contains:
+   - form: The form at this step
+   - rule: Conjugation rule applied (use markdown to highlight the conjugation)
+   - explanation: Why this form is used (meaning/purpose)
+4. wordType: Type (godan verb, ichidan verb, i-adjective, or na-adjective)
+5. usageExample: A contextual example with three fields:
+   - japanese: ONLY a simple, clean example sentence in Japanese (NO analysis, NO explanations, NO meta-text)
+   - english: English translation of the example sentence
+   - explanation: Brief explanation of why this conjugation form fits the context
+
+IMPORTANT for usageExample.japanese:
+- Must be a clean, natural Japanese sentence
+- Should demonstrate the conjugation form in use
+- NO verbose analysis or conjugation breakdowns
+- NO parenthetical explanations or notes
+- NO text like "(End of analysis)" or "(JSON output follows)"
+- Just a simple example sentence that a learner could study
+
+Format other text fields using markdown. Highlight conjugation forms and transformation steps.`;
 
       default:
         throw new ApplicationError('INVALID_ACTION', `Unknown action: ${params.action}`, 400);
