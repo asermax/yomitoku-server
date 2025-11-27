@@ -217,7 +217,7 @@ Provide precise bounding box coordinates in a normalized 0-1000 coordinate syste
 - 0 represents the top-left corner
 - 1000 represents the bottom-right corner
 - Coordinates are relative to this image's dimensions
-Tokenize the phrase into words with readings and romaji.
+Tokenize the phrase into words with readings, romaji, partOfSpeech (array of tags like verb, noun, adjective, particle), and hasKanji (boolean - true if word contains kanji).
     `.trim();
   }
 
@@ -229,7 +229,7 @@ Identify up to ${maxPhrases} distinct Japanese text phrases visible in this imag
 
 For each phrase:
 - Provide the complete Japanese text
-- Tokenize into words with readings and romaji
+- Tokenize into words with readings, romaji, partOfSpeech (array of tags like verb, noun, adjective, particle), and hasKanji (boolean - true if word contains kanji)
 - Provide precise bounding box coordinates as [y_min, x_min, y_max, x_max] in a normalized 0-1000 coordinate system:
   - All values are 0-1000 scale relative to this full image's dimensions
   - y_min: top edge of bounding box
@@ -350,7 +350,7 @@ Format all text fields using markdown. Highlight conjugation forms and transform
               hasKanji: { type: 'boolean' },
               isCommon: { type: 'boolean' },
             },
-            required: ['word', 'reading', 'romaji'],
+            required: ['word', 'reading', 'romaji', 'partOfSpeech', 'hasKanji'],
           },
         },
       },
@@ -384,7 +384,7 @@ Format all text fields using markdown. Highlight conjugation forms and transform
                 hasKanji: { type: 'boolean' },
                 isCommon: { type: 'boolean' },
               },
-              required: ['word', 'reading', 'romaji'],
+              required: ['word', 'reading', 'romaji', 'partOfSpeech', 'hasKanji'],
             },
           },
         },
