@@ -14,11 +14,13 @@
  * const same = getGeminiService();    // Returns cached instance
  */
 export const createServiceFactory = <T>(factory: () => T): (() => T) => {
-  let instance: T | null = null;
+  let instance: T;
+  let initialized = false;
 
   return () => {
-    if (instance == null) {
+    if (!initialized) {
       instance = factory();
+      initialized = true;
     }
 
     return instance;

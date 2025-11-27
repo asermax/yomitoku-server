@@ -73,8 +73,8 @@ describe('createServiceFactory', () => {
     const first = getService();
     const second = getService();
 
-    // Factory called twice because null == null, so condition always recreates
-    expect(factory).toHaveBeenCalledTimes(2);
+    // With initialized flag, factory is called once and result is cached
+    expect(factory).toHaveBeenCalledTimes(1);
     expect(first).toBeNull();
     expect(second).toBeNull();
   });
@@ -86,8 +86,7 @@ describe('createServiceFactory', () => {
     const first = getService();
     const second = getService();
 
-    // Factory should be called twice because 0 is falsy but we check `instance == null`
-    // Actually, 0 is NOT null/undefined, so it should be cached
+    // 0 is NOT null/undefined, so it should be cached
     expect(factory).toHaveBeenCalledTimes(1);
     expect(first).toBe(0);
     expect(second).toBe(0);
