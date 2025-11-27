@@ -79,7 +79,26 @@ Use `@google/genai` SDK with:
 
 Plugins cannot access `app.config` at registration time. Use lazy initialization or access config inside route handlers.
 
-### 3. Image Validation and Dimensions
+### 3. Shared Utilities
+
+**Image Validation** (`src/utils/image-validation.ts`):
+- Validates base64-encoded PNG images
+- Checks: data URL prefix strip, base64 format, PNG magic bytes, size limits
+- Returns: `{ base64Data, buffer, size }`
+- Usage: `validateImage(image, { maxSize: app.config?.MAX_IMAGE_SIZE })`
+
+**Service Factory** (`src/utils/service-factory.ts`):
+- Generic lazy initialization factory for services
+- Solves Fastify `app.config` timing constraint
+- Usage: `const getService = createServiceFactory(() => new Service(app.config.KEY, app.log))`
+
+**Error Categorization** (`src/utils/error-categorization.ts`):
+- Unified error categorization for all Gemini API calls
+- Handles: auth errors, quota/rate limits, content filtering, network errors, timeouts
+- Context-aware timeout messages per endpoint
+- Usage: `categorizeApiError(error, { context: 'analyze', isDevelopment })`
+
+### 4. Image Validation and Dimensions
 
 **Client-side image cropping**: The extension sends pre-cropped images containing only the user's selection. Calculate image dimensions from selection dimensions:
 
@@ -90,34 +109,34 @@ imageHeight = selection.height * devicePixelRatio
 
 **Required fields**: `devicePixelRatio` is essential for calculating actual image dimensions on high-DPI displays (Retina, 4K, etc.).
 
-Check PNG magic bytes for security, not just format string.
+**Image validation**: Use `validateImage()` utility for all image inputs (consolidates PNG magic bytes check, base64 validation, size limits).
 
-### 4. Error Handling
+### 5. Error Handling
 
-Categorize errors by type:
+**Use `categorizeApiError()` utility** for consistent error handling across all routes:
 - Gemini API errors (auth, quota, content filtering) → hide details, return 503
 - Network errors → user-friendly messages
-- Validation errors → specific feedback
-- Generic errors → sanitize in production (hide `originalError`)
+- Timeout errors → context-specific suggestions (smaller image, fewer phrases, etc.)
+- Generic errors → sanitize in production (hide `originalError` unless development mode)
 
 Never expose API authentication errors to clients.
 
-### 5. Lazy Service Initialization
+### 6. Lazy Service Initialization
 
-Initialize services inside route handlers to ensure `app.config` is available:
-```
-let service: Service | null = null;
-const getService = () => {
-  if (!service) service = new Service(app.config.KEY, app.log);
-  return service;
-};
+Use `createServiceFactory()` utility for lazy initialization:
+```typescript
+import { createServiceFactory } from '../utils/service-factory.js';
+
+const getGeminiService = createServiceFactory(
+  () => new GeminiService(app.config.GEMINI_API_KEY, app.log),
+);
 ```
 
-### 6. Configuration Access
+### 7. Configuration Access
 
 Plugins must be wrapped with `fastify-plugin` to expose decorators. Call `app.ready()` before accessing `app.config` in server startup.
 
-### 7. Testing
+### 8. Testing
 
 **Framework**: Vitest with explicit imports (no globals)
 - Use `import { describe, it, expect } from 'vitest'` in test files
@@ -139,7 +158,7 @@ afterAll(async () => {
 });
 ```
 
-### 8. Caching Strategy
+### 9. Caching Strategy
 
 **MVP uses in-memory LRU cache** for `/api/analyze` endpoint only:
 - Cache key: hash of (phrase + action type + fullPhrase)
@@ -150,7 +169,7 @@ afterAll(async () => {
 
 **Do NOT cache** `/api/identify-phrase` endpoint - image variations prevent effective caching.
 
-### 9. Authentication Pattern
+### 10. Authentication Pattern
 
 **Global Authentication**: All endpoints require valid `x-api-key` header by default.
 

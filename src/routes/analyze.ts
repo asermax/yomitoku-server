@@ -2,17 +2,14 @@ import { FastifyPluginAsync } from 'fastify';
 import { GeminiService } from '../services/gemini.js';
 import { ApplicationError } from '../types/errors.js';
 import type { AnalyzeRequest } from '../types/api.js';
+import { validateImage } from '../utils/image-validation.js';
+import { createServiceFactory } from '../utils/service-factory.js';
+import { categorizeApiError } from '../utils/error-categorization.js';
 
 export const analyzeRoutes: FastifyPluginAsync = async (app) => {
-  // Initialize GeminiService lazily inside route handler
-  let geminiService: GeminiService | null = null;
-
-  const getGeminiService = () => {
-    if (!geminiService) {
-      geminiService = new GeminiService(app.config.GEMINI_API_KEY, app.log);
-    }
-    return geminiService;
-  };
+  const getGeminiService = createServiceFactory(
+    () => new GeminiService(app.config.GEMINI_API_KEY, app.log),
+  );
 
   app.post('/analyze', {
     config: {
@@ -101,55 +98,10 @@ export const analyzeRoutes: FastifyPluginAsync = async (app) => {
     // If image is provided, validate it
     let imageData: string | undefined;
     if (context?.image) {
-      // Extract base64 data (remove data URL prefix if present)
-      const base64Data = context.image.startsWith('data:')
-        ? context.image.split(',')[1]
-        : context.image;
-
-      // Validate base64 format
-      if (!base64Data || !/^[A-Za-z0-9+/]+=*$/.test(base64Data)) {
-        throw new ApplicationError(
-          'INVALID_REQUEST',
-          'Image must be valid base64-encoded data',
-          400,
-        );
-      }
-
-      // Decode and validate image
-      let imageBuffer: Buffer;
-      try {
-        imageBuffer = Buffer.from(base64Data, 'base64');
-      }
-      catch (error) {
-        throw new ApplicationError(
-          'INVALID_REQUEST',
-          'Invalid base64 encoding',
-          400,
-        );
-      }
-
-      // Validate it's PNG format by checking magic bytes
-      const pngMagicBytes = Buffer.from([0x89, 0x50, 0x4E, 0x47]);
-      if (imageBuffer.length < 4 || !imageBuffer.subarray(0, 4).equals(pngMagicBytes)) {
-        throw new ApplicationError(
-          'INVALID_REQUEST',
-          'Image must be PNG format',
-          400,
-        );
-      }
-
-      // Validate image size
-      const imageSize = imageBuffer.length;
-      const maxImageSize = app.config?.MAX_IMAGE_SIZE ?? 5242880; // Default 5MB
-
-      if (imageSize > maxImageSize) {
-        throw new ApplicationError(
-          'IMAGE_TOO_LARGE',
-          `Image size (${(imageSize / 1024 / 1024).toFixed(2)}MB) exceeds limit of ${(maxImageSize / 1024 / 1024).toFixed(0)}MB`,
-          413,
-        );
-      }
-
+      const { base64Data } = validateImage(
+        context.image,
+        { maxSize: app.config?.MAX_IMAGE_SIZE },
+      );
       imageData = base64Data;
     }
 
@@ -194,63 +146,10 @@ export const analyzeRoutes: FastifyPluginAsync = async (app) => {
         hasImage: !!imageData,
       }, 'Unexpected error in analyze');
 
-      // Categorize errors for better user feedback
-      const errorCode = (error as any)?.code;
-      const errorMessage = (error as any)?.message || '';
-
-      // Gemini API authentication errors
-      if (errorCode === 401 || errorMessage.includes('API key') || errorMessage.includes('INVALID_ARGUMENT')) {
-        throw new ApplicationError(
-          'API_UNAVAILABLE',
-          'Service temporarily unavailable. Please contact support.',
-          503,
-        );
-      }
-
-      // Gemini API rate limit or quota errors
-      if (errorCode === 429 || errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
-        throw new ApplicationError(
-          'API_QUOTA_EXCEEDED',
-          'Service temporarily unavailable due to high demand. Please try again later.',
-          503,
-        );
-      }
-
-      // Gemini API content filtering errors
-      if (errorMessage.includes('content') && errorMessage.includes('filter')) {
-        throw new ApplicationError(
-          'CONTENT_FILTERED',
-          'Unable to process this content. Please try different text.',
-          400,
-        );
-      }
-
-      // Network connectivity errors
-      if (errorCode === 'ECONNREFUSED' || errorCode === 'ENOTFOUND') {
-        throw new ApplicationError(
-          'API_UNAVAILABLE',
-          'Unable to connect to analysis service. Please try again.',
-          503,
-        );
-      }
-
-      // Timeout errors
-      if (errorCode === 'ETIMEDOUT' || errorMessage.includes('timeout')) {
-        throw new ApplicationError(
-          'TIMEOUT',
-          'Request timed out. Please try again.',
-          504,
-        );
-      }
-
-      // Generic API error - don't expose internal details in production
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      throw new ApplicationError(
-        'API_ERROR',
-        'Failed to analyze phrase',
-        500,
-        isDevelopment ? { originalError: errorMessage } : undefined,
-      );
+      throw categorizeApiError(error, {
+        context: 'analyze',
+        isDevelopment: process.env.NODE_ENV === 'development',
+      });
     }
   });
 };
