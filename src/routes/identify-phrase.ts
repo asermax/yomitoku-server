@@ -65,7 +65,47 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
                 },
               },
             },
+            translation: {
+              type: 'object',
+              properties: {
+                translation: { type: 'string' },
+                literalTranslation: { type: 'string' },
+                notes: { type: 'string' },
+              },
+              required: ['translation'],
+            },
+            explain: {
+              type: 'object',
+              properties: {
+                meaning: { type: 'string' },
+                contextUsage: { type: 'string' },
+                commonSituations: { type: 'string' },
+                nuances: { type: 'string' },
+              },
+              required: ['meaning', 'contextUsage'],
+            },
+            grammar: {
+              type: 'object',
+              properties: {
+                breakdown: { type: 'string' },
+                elements: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      element: { type: 'string' },
+                      type: { type: 'string' },
+                      explanation: { type: 'string' },
+                    },
+                  },
+                },
+                variations: { type: 'string' },
+                learnerTips: { type: 'string' },
+              },
+              required: ['breakdown'],
+            },
           },
+          required: ['phrase', 'romaji', 'boundingBox', 'tokens', 'translation', 'explain', 'grammar'],
         },
       },
     },

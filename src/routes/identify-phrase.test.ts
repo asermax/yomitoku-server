@@ -59,6 +59,19 @@ describe('POST /api/identify-phrase', () => {
           isCommon: true,
         },
       ],
+      translation: {
+        translation: 'Hello',
+        notes: 'Common greeting used during daytime',
+      },
+      explain: {
+        meaning: 'A polite greeting used during the day',
+        contextUsage: 'Standard daytime greeting in formal and informal situations',
+        commonSituations: 'Meeting someone, answering phone calls, starting conversations',
+      },
+      grammar: {
+        breakdown: 'Set phrase - no grammatical elements to break down',
+        learnerTips: 'Used from late morning until evening',
+      },
     };
 
     mockGeminiService.identifyPhrase.mockResolvedValue(mockResult);
@@ -80,6 +93,9 @@ describe('POST /api/identify-phrase', () => {
     expect(result.phrase).toBe('こんにちは');
     expect(result.tokens).toHaveLength(1);
     expect(result.boundingBox).toHaveLength(4);
+    expect(result.translation).toBeDefined();
+    expect(result.explain).toBeDefined();
+    expect(result.grammar).toBeDefined();
   });
 
   it('should return response matching documented schema', async () => {
@@ -97,6 +113,22 @@ describe('POST /api/identify-phrase', () => {
           isCommon: true,
         },
       ],
+      translation: {
+        translation: 'To eat',
+        literalTranslation: 'To eat',
+      },
+      explain: {
+        meaning: 'To consume food',
+        contextUsage: 'Common verb for eating',
+        nuances: 'Neutral formality level',
+      },
+      grammar: {
+        breakdown: 'Dictionary form ichidan verb',
+        elements: [
+          { element: '食べ', type: 'stem', explanation: 'Verb stem' },
+          { element: 'る', type: 'suffix', explanation: 'Ichidan verb ending' },
+        ],
+      },
     };
 
     mockGeminiService.identifyPhrase.mockResolvedValue(mockResult);
@@ -118,6 +150,9 @@ describe('POST /api/identify-phrase', () => {
     expect(result).toHaveProperty('romaji');
     expect(result).toHaveProperty('boundingBox');
     expect(result).toHaveProperty('tokens');
+    expect(result).toHaveProperty('translation');
+    expect(result).toHaveProperty('explain');
+    expect(result).toHaveProperty('grammar');
 
     // Validate types
     expect(typeof result.phrase).toBe('string');
@@ -150,6 +185,19 @@ describe('POST /api/identify-phrase', () => {
       expect(typeof token.hasKanji).toBe('boolean');
       expect(typeof token.isCommon).toBe('boolean');
     });
+
+    // Validate translation object
+    expect(typeof result.translation).toBe('object');
+    expect(typeof result.translation.translation).toBe('string');
+
+    // Validate explain object
+    expect(typeof result.explain).toBe('object');
+    expect(typeof result.explain.meaning).toBe('string');
+    expect(typeof result.explain.contextUsage).toBe('string');
+
+    // Validate grammar object
+    expect(typeof result.grammar).toBe('object');
+    expect(typeof result.grammar.breakdown).toBe('string');
   });
 
   it('should pass correct parameters to GeminiService', async () => {
@@ -158,6 +206,9 @@ describe('POST /api/identify-phrase', () => {
       romaji: 'test',
       boundingBox: [0, 0, 0, 0],
       tokens: [],
+      translation: { translation: 'Test' },
+      explain: { meaning: 'Test', contextUsage: 'Test usage' },
+      grammar: { breakdown: 'Test breakdown' },
     });
 
     await app.inject({
@@ -181,6 +232,9 @@ describe('POST /api/identify-phrase', () => {
       romaji: 'test',
       boundingBox: [0, 0, 0, 0],
       tokens: [],
+      translation: { translation: 'Test' },
+      explain: { meaning: 'Test', contextUsage: 'Test usage' },
+      grammar: { breakdown: 'Test breakdown' },
     });
 
     const payload = {
@@ -387,6 +441,9 @@ describe('POST /api/identify-phrase', () => {
       romaji: 'test',
       boundingBox: [0, 0, 0, 0],
       tokens: [],
+      translation: { translation: 'Test' },
+      explain: { meaning: 'Test', contextUsage: 'Test usage' },
+      grammar: { breakdown: 'Test breakdown' },
     });
 
     const payload = {

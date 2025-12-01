@@ -44,6 +44,50 @@ export interface PhraseToken {
 }
 
 /**
+ * Translation analysis result
+ */
+export interface TranslationResult {
+  /** Natural English translation */
+  translation: string;
+  /** Literal translation if significantly different from natural translation */
+  literalTranslation?: string;
+  /** Contextual nuances or cultural notes */
+  notes?: string;
+}
+
+/**
+ * Explanation analysis result
+ */
+export interface ExplainResult {
+  /** Core meaning and usage */
+  meaning: string;
+  /** How it functions in this specific context */
+  contextUsage: string;
+  /** Common situations where this phrase appears */
+  commonSituations?: string;
+  /** Important nuances, connotations, or formality level */
+  nuances?: string;
+}
+
+/**
+ * Grammar analysis result
+ */
+export interface GrammarResult {
+  /** Step-by-step grammatical breakdown */
+  breakdown: string;
+  /** Individual grammatical elements with explanations */
+  elements?: Array<{
+    element: string;
+    type: string;
+    explanation: string;
+  }>;
+  /** Common variations or alternative constructions */
+  variations?: string;
+  /** Tips for learners, common mistakes */
+  learnerTips?: string;
+}
+
+/**
  * Response body for POST /api/identify-phrase
  */
 export interface IdentifyPhraseResponse {
@@ -55,6 +99,12 @@ export interface IdentifyPhraseResponse {
   boundingBox: [number, number, number, number];
   /** Tokenized phrase */
   tokens: PhraseToken[];
+  /** Pre-computed translation analysis */
+  translation: TranslationResult;
+  /** Pre-computed explanation analysis */
+  explain: ExplainResult;
+  /** Pre-computed grammar analysis */
+  grammar: GrammarResult;
 }
 
 /**

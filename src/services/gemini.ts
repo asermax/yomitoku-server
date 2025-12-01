@@ -229,6 +229,28 @@ Tokenize the phrase into words following these rules for language learners:
 - The goal is meaningful units a learner would look up in a dictionary or study as vocabulary
 
 For each token provide: word, reading (hiragana/katakana), romaji, partOfSpeech (array of tags like verb, noun, adjective, particle), hasKanji (boolean - true if word contains kanji), and isCommon (boolean - true if commonly used).
+
+Additionally, provide pre-computed phrase-level analysis:
+
+**Translation:**
+1. Natural English translation considering the context
+2. Literal translation if significantly different
+3. Brief explanation of any contextual nuances or cultural notes
+
+**Explanation:**
+1. Core meaning and how the phrase is used
+2. How it functions in this specific context
+3. Common situations where this phrase appears
+4. Important nuances, connotations, or formality level
+
+**Grammar:**
+1. Identify all grammatical elements (particles, verb forms, conjugations, etc.)
+2. Explain the grammatical structure step-by-step
+3. Explain why each element is used in this context
+4. Common variations or alternative constructions
+5. Tips for learners (common mistakes, similar patterns)
+
+Format all text fields in translation, explanation, and grammar using markdown. Highlight key terms, usage patterns, and grammatical elements.
     `.trim();
   }
 
@@ -383,8 +405,78 @@ Format other text fields using markdown. Highlight conjugation forms and transfo
             required: ['word', 'reading', 'romaji', 'partOfSpeech', 'hasKanji'],
           },
         },
+        translation: {
+          type: 'object',
+          properties: {
+            translation: {
+              type: 'string',
+              description: 'Natural English translation',
+            },
+            literalTranslation: {
+              type: 'string',
+              description: 'Literal translation if significantly different from natural translation',
+            },
+            notes: {
+              type: 'string',
+              description: 'Contextual nuances or cultural notes',
+            },
+          },
+          required: ['translation'],
+        },
+        explain: {
+          type: 'object',
+          properties: {
+            meaning: {
+              type: 'string',
+              description: 'Core meaning and usage',
+            },
+            contextUsage: {
+              type: 'string',
+              description: 'How it functions in this specific context',
+            },
+            commonSituations: {
+              type: 'string',
+              description: 'Common situations where this phrase appears',
+            },
+            nuances: {
+              type: 'string',
+              description: 'Important nuances, connotations, or formality level',
+            },
+          },
+          required: ['meaning', 'contextUsage'],
+        },
+        grammar: {
+          type: 'object',
+          properties: {
+            breakdown: {
+              type: 'string',
+              description: 'Step-by-step grammatical breakdown',
+            },
+            elements: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  element: { type: 'string' },
+                  type: { type: 'string' },
+                  explanation: { type: 'string' },
+                },
+              },
+              description: 'Individual grammatical elements with explanations',
+            },
+            variations: {
+              type: 'string',
+              description: 'Common variations or alternative constructions',
+            },
+            learnerTips: {
+              type: 'string',
+              description: 'Tips for learners, common mistakes',
+            },
+          },
+          required: ['breakdown'],
+        },
       },
-      required: ['phrase', 'romaji', 'boundingBox', 'tokens'],
+      required: ['phrase', 'romaji', 'boundingBox', 'tokens', 'translation', 'explain', 'grammar'],
     };
   }
 

@@ -1,5 +1,8 @@
 import { build } from './app.js';
 
+// Suppress dotenv console output (tips and logs)
+process.env.DOTENV_CONFIG_QUIET = 'true';
+
 const start = async () => {
   try {
     const app = await build();
