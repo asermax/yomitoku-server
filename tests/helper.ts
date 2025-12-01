@@ -26,10 +26,8 @@ vi.mock('../src/services/gemini.js', () => ({
  * This creates a real app instance for integration testing
  */
 export const buildTestApp = async () => {
-  // Set API_KEY for authentication tests
-  if (!process.env.API_KEY) {
-    process.env.API_KEY = TEST_API_KEY;
-  }
+  // Set API_KEY for authentication tests (always override to ensure test consistency)
+  process.env.API_KEY = TEST_API_KEY;
 
   const app = await build();
   await app.ready();

@@ -33,6 +33,16 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
             isCommon: true,
           },
         ],
+        translation: {
+          translation: 'Hello',
+        },
+        explain: {
+          meaning: 'A polite greeting',
+          contextUsage: 'Standard daytime greeting',
+        },
+        grammar: {
+          breakdown: 'Set phrase',
+        },
       };
 
       mockGeminiService.identifyPhrase.mockResolvedValue(mockResult);
@@ -56,6 +66,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
         romaji: 'test',
         boundingBox: [0, 0, 0, 0],
         tokens: [],
+        translation: { translation: 'Test' },
+        explain: { meaning: 'Test', contextUsage: 'Test usage' },
+        grammar: { breakdown: 'Test breakdown' },
       });
 
       const payload = createIdentifyPhrasePayload({
@@ -222,6 +235,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
         romaji: 'test',
         boundingBox: [0, 0, 0, 0],
         tokens: [],
+        translation: { translation: 'Test' },
+        explain: { meaning: 'Test', contextUsage: 'Test usage' },
+        grammar: { breakdown: 'Test breakdown' },
       });
 
       const payload = createIdentifyPhrasePayload();
@@ -268,6 +284,9 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
         romaji: 'test',
         boundingBox: [0, 0, 0, 0],
         tokens: [],
+        translation: { translation: 'Test' },
+        explain: { meaning: 'Test', contextUsage: 'Test usage' },
+        grammar: { breakdown: 'Test breakdown' },
       });
 
       const response = await app.inject({
