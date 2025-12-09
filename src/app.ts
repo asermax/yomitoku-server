@@ -8,7 +8,6 @@ import { multipartPlugin } from './plugins/multipart.js';
 import { cachePlugin } from './plugins/cache.js';
 import { healthRoutes } from './routes/health.js';
 import { identifyPhraseRoutes } from './routes/identify-phrase.js';
-import { identifyPhrasesRoutes } from './routes/identify-phrases.js';
 import { analyzeRoutes } from './routes/analyze.js';
 
 export async function build(opts: FastifyServerOptions = {}) {
@@ -56,7 +55,6 @@ export async function build(opts: FastifyServerOptions = {}) {
   // Register routes
   await app.register(healthRoutes, { prefix: '/api' });
   await app.register(identifyPhraseRoutes, { prefix: '/api' });
-  await app.register(identifyPhrasesRoutes, { prefix: '/api' });
   await app.register(analyzeRoutes, { prefix: '/api' });
 
   return app;

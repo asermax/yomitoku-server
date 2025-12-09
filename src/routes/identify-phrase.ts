@@ -27,6 +27,12 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
             type: 'string',
             description: 'Base64-encoded PNG screenshot (cropped to selection)',
           },
+          maxPhrases: {
+            type: 'number',
+            description: 'Maximum number of phrases to identify (default: 25, max: 100)',
+            minimum: 1,
+            maximum: 100,
+          },
           metadata: {
             type: 'object',
             properties: {
@@ -40,77 +46,86 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
         200: {
           type: 'object',
           properties: {
-            phrase: { type: 'string' },
-            romaji: { type: 'string' },
-            boundingBox: {
-              type: 'array',
-              items: { type: 'number' },
-              minItems: 4,
-              maxItems: 4,
-            },
-            tokens: {
+            phrases: {
               type: 'array',
               items: {
                 type: 'object',
                 properties: {
-                  word: { type: 'string' },
-                  reading: { type: 'string' },
+                  phrase: { type: 'string' },
                   romaji: { type: 'string' },
-                  partOfSpeech: {
+                  boundingBox: {
                     type: 'array',
-                    items: { type: 'string' },
+                    items: { type: 'number' },
+                    minItems: 4,
+                    maxItems: 4,
                   },
-                  hasKanji: { type: 'boolean' },
-                  isCommon: { type: 'boolean' },
-                },
-              },
-            },
-            translation: {
-              type: 'object',
-              properties: {
-                translation: { type: 'string' },
-                literalTranslation: { type: 'string' },
-                notes: { type: 'string' },
-              },
-              required: ['translation'],
-            },
-            explain: {
-              type: 'object',
-              properties: {
-                meaning: { type: 'string' },
-                contextUsage: { type: 'string' },
-                commonSituations: { type: 'string' },
-                nuances: { type: 'string' },
-              },
-              required: ['meaning', 'contextUsage'],
-            },
-            grammar: {
-              type: 'object',
-              properties: {
-                breakdown: { type: 'string' },
-                elements: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      element: { type: 'string' },
-                      type: { type: 'string' },
-                      explanation: { type: 'string' },
+                  tokens: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        word: { type: 'string' },
+                        reading: { type: 'string' },
+                        romaji: { type: 'string' },
+                        partOfSpeech: {
+                          type: 'array',
+                          items: { type: 'string' },
+                        },
+                        hasKanji: { type: 'boolean' },
+                        isCommon: { type: 'boolean' },
+                      },
                     },
                   },
+                  translation: {
+                    type: 'object',
+                    properties: {
+                      translation: { type: 'string' },
+                      literalTranslation: { type: 'string' },
+                      notes: { type: 'string' },
+                    },
+                    required: ['translation'],
+                  },
+                  explain: {
+                    type: 'object',
+                    properties: {
+                      meaning: { type: 'string' },
+                      contextUsage: { type: 'string' },
+                      commonSituations: { type: 'string' },
+                      nuances: { type: 'string' },
+                    },
+                    required: ['meaning', 'contextUsage'],
+                  },
+                  grammar: {
+                    type: 'object',
+                    properties: {
+                      breakdown: { type: 'string' },
+                      elements: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            element: { type: 'string' },
+                            type: { type: 'string' },
+                            explanation: { type: 'string' },
+                          },
+                        },
+                      },
+                      variations: { type: 'string' },
+                      learnerTips: { type: 'string' },
+                    },
+                    required: ['breakdown'],
+                  },
                 },
-                variations: { type: 'string' },
-                learnerTips: { type: 'string' },
+                required: ['phrase', 'romaji', 'boundingBox', 'tokens', 'translation', 'explain', 'grammar'],
               },
-              required: ['breakdown'],
             },
           },
-          required: ['phrase', 'romaji', 'boundingBox', 'tokens', 'translation', 'explain', 'grammar'],
+          required: ['phrases'],
         },
       },
     },
   }, async (request, reply) => {
-    const { image, metadata } = request.body as IdentifyPhraseRequest;
+    const { image, maxPhrases, metadata } = request.body as IdentifyPhraseRequest;
 
     const { base64Data, size: imageSize } = validateImage(
       image,
@@ -118,11 +133,12 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
     );
 
     try {
-      const result = await getGeminiService().identifyPhrase({
+      const phrases = await getGeminiService().identifyPhrase({
         screenshot: base64Data,
+        maxPhrases,
       });
 
-      return result;
+      return { phrases };
     }
     catch (error) {
       // Re-throw ApplicationError as-is
@@ -134,6 +150,7 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
       app.log.error({
         error,
         imageSize,
+        maxPhrases,
         metadata,
       }, 'Unexpected error in identify-phrase');
 

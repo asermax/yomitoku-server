@@ -21,6 +21,8 @@ export interface PageMetadata {
 export interface IdentifyPhraseRequest {
   /** Base64-encoded PNG screenshot (cropped to selection) */
   image: string;
+  /** Maximum number of phrases to identify (default: 25, max: 100) */
+  maxPhrases?: number;
   /** Optional page metadata */
   metadata?: PageMetadata;
 }
@@ -88,9 +90,9 @@ export interface GrammarResult {
 }
 
 /**
- * Response body for POST /api/identify-phrase
+ * Phrase data with pre-computed actions
  */
-export interface IdentifyPhraseResponse {
+export interface PhraseDataWithActions {
   /** Identified Japanese phrase */
   phrase: string;
   /** Romanized reading */
@@ -105,6 +107,14 @@ export interface IdentifyPhraseResponse {
   explain: ExplainResult;
   /** Pre-computed grammar analysis */
   grammar: GrammarResult;
+}
+
+/**
+ * Response body for POST /api/identify-phrase
+ */
+export interface IdentifyPhraseResponse {
+  /** Array of identified phrases with pre-computed actions */
+  phrases: PhraseDataWithActions[];
 }
 
 /**
@@ -124,39 +134,6 @@ export interface AnalyzeRequest {
   };
 }
 
-/**
- * Request body for POST /api/identify-phrases
- */
-export interface IdentifyPhrasesRequest {
-  /** Base64-encoded PNG screenshot (full viewport) */
-  image: string;
-  /** Maximum number of phrases to identify (default: 25, max: 100) */
-  maxPhrases?: number;
-  /** Optional page metadata */
-  metadata?: PageMetadata;
-}
-
-/**
- * Phrase data in identify-phrases response
- */
-export interface PhraseData {
-  /** Identified Japanese phrase */
-  phrase: string;
-  /** Romanized reading */
-  romaji: string;
-  /** Bounding box coordinates [y_min, x_min, y_max, x_max] (normalized 0-1000 relative to full viewport image) */
-  boundingBox: [number, number, number, number];
-  /** Tokenized phrase */
-  tokens: PhraseToken[];
-}
-
-/**
- * Response body for POST /api/identify-phrases
- */
-export interface IdentifyPhrasesResponse {
-  /** Array of identified phrases */
-  phrases: PhraseData[];
-}
 
 /**
  * Response body for POST /api/analyze

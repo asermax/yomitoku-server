@@ -45,7 +45,7 @@ describe('POST /api/identify-phrase', () => {
   });
 
   it('should return 200 with valid phrase data when successful', async () => {
-    const mockResult = {
+    const mockPhraseData = {
       phrase: 'こんにちは',
       romaji: 'konnichiwa',
       boundingBox: [100, 200, 150, 500],
@@ -74,7 +74,7 @@ describe('POST /api/identify-phrase', () => {
       },
     };
 
-    mockGeminiService.identifyPhrase.mockResolvedValue(mockResult);
+    mockGeminiService.identifyPhrase.mockResolvedValue([mockPhraseData]);
 
     const response = await app.inject({
       method: 'POST',
@@ -89,13 +89,14 @@ describe('POST /api/identify-phrase', () => {
     expect(mockGeminiService.identifyPhrase).toHaveBeenCalledTimes(1);
 
     const result = response.json();
-    expect(result).toEqual(mockResult);
-    expect(result.phrase).toBe('こんにちは');
-    expect(result.tokens).toHaveLength(1);
-    expect(result.boundingBox).toHaveLength(4);
-    expect(result.translation).toBeDefined();
-    expect(result.explain).toBeDefined();
-    expect(result.grammar).toBeDefined();
+    expect(result).toEqual({ phrases: [mockPhraseData] });
+    expect(result.phrases).toHaveLength(1);
+    expect(result.phrases[0].phrase).toBe('こんにちは');
+    expect(result.phrases[0].tokens).toHaveLength(1);
+    expect(result.phrases[0].boundingBox).toHaveLength(4);
+    expect(result.phrases[0].translation).toBeDefined();
+    expect(result.phrases[0].explain).toBeDefined();
+    expect(result.phrases[0].grammar).toBeDefined();
   });
 
   it('should return response matching documented schema', async () => {
@@ -131,7 +132,7 @@ describe('POST /api/identify-phrase', () => {
       },
     };
 
-    mockGeminiService.identifyPhrase.mockResolvedValue(mockResult);
+    mockGeminiService.identifyPhrase.mockResolvedValue([mockResult]);
 
     const response = await app.inject({
       method: 'POST',
@@ -146,31 +147,38 @@ describe('POST /api/identify-phrase', () => {
     const result = response.json();
 
     // Validate top-level structure
-    expect(result).toHaveProperty('phrase');
-    expect(result).toHaveProperty('romaji');
-    expect(result).toHaveProperty('boundingBox');
-    expect(result).toHaveProperty('tokens');
-    expect(result).toHaveProperty('translation');
-    expect(result).toHaveProperty('explain');
-    expect(result).toHaveProperty('grammar');
+    expect(result).toHaveProperty('phrases');
+    expect(Array.isArray(result.phrases)).toBe(true);
+    expect(result.phrases).toHaveLength(1);
+
+    const phrase = result.phrases[0];
+
+    // Validate phrase structure
+    expect(phrase).toHaveProperty('phrase');
+    expect(phrase).toHaveProperty('romaji');
+    expect(phrase).toHaveProperty('boundingBox');
+    expect(phrase).toHaveProperty('tokens');
+    expect(phrase).toHaveProperty('translation');
+    expect(phrase).toHaveProperty('explain');
+    expect(phrase).toHaveProperty('grammar');
 
     // Validate types
-    expect(typeof result.phrase).toBe('string');
-    expect(typeof result.romaji).toBe('string');
+    expect(typeof phrase.phrase).toBe('string');
+    expect(typeof phrase.romaji).toBe('string');
 
     // Validate boundingBox is array of 4 numbers
-    expect(Array.isArray(result.boundingBox)).toBe(true);
-    expect(result.boundingBox).toHaveLength(4);
-    result.boundingBox.forEach((coord: number) => {
+    expect(Array.isArray(phrase.boundingBox)).toBe(true);
+    expect(phrase.boundingBox).toHaveLength(4);
+    phrase.boundingBox.forEach((coord: number) => {
       expect(typeof coord).toBe('number');
     });
 
     // Validate tokens array structure
-    expect(Array.isArray(result.tokens)).toBe(true);
-    expect(result.tokens.length).toBeGreaterThan(0);
+    expect(Array.isArray(phrase.tokens)).toBe(true);
+    expect(phrase.tokens.length).toBeGreaterThan(0);
 
     // Validate each token has all required fields with correct types
-    result.tokens.forEach((token: any) => {
+    phrase.tokens.forEach((token: any) => {
       expect(token).toHaveProperty('word');
       expect(token).toHaveProperty('reading');
       expect(token).toHaveProperty('romaji');
@@ -187,21 +195,21 @@ describe('POST /api/identify-phrase', () => {
     });
 
     // Validate translation object
-    expect(typeof result.translation).toBe('object');
-    expect(typeof result.translation.translation).toBe('string');
+    expect(typeof phrase.translation).toBe('object');
+    expect(typeof phrase.translation.translation).toBe('string');
 
     // Validate explain object
-    expect(typeof result.explain).toBe('object');
-    expect(typeof result.explain.meaning).toBe('string');
-    expect(typeof result.explain.contextUsage).toBe('string');
+    expect(typeof phrase.explain).toBe('object');
+    expect(typeof phrase.explain.meaning).toBe('string');
+    expect(typeof phrase.explain.contextUsage).toBe('string');
 
     // Validate grammar object
-    expect(typeof result.grammar).toBe('object');
-    expect(typeof result.grammar.breakdown).toBe('string');
+    expect(typeof phrase.grammar).toBe('object');
+    expect(typeof phrase.grammar.breakdown).toBe('string');
   });
 
   it('should pass correct parameters to GeminiService', async () => {
-    mockGeminiService.identifyPhrase.mockResolvedValue({
+    mockGeminiService.identifyPhrase.mockResolvedValue([{
       phrase: 'test',
       romaji: 'test',
       boundingBox: [0, 0, 0, 0],
@@ -209,7 +217,7 @@ describe('POST /api/identify-phrase', () => {
       translation: { translation: 'Test' },
       explain: { meaning: 'Test', contextUsage: 'Test usage' },
       grammar: { breakdown: 'Test breakdown' },
-    });
+    }]);
 
     await app.inject({
       method: 'POST',
@@ -222,12 +230,13 @@ describe('POST /api/identify-phrase', () => {
 
     expect(mockGeminiService.identifyPhrase).toHaveBeenCalledWith({
       screenshot: validPngBase64,
+      maxPhrases: undefined,
     });
   });
 
 
   it('should accept base64 without data URL prefix', async () => {
-    mockGeminiService.identifyPhrase.mockResolvedValue({
+    mockGeminiService.identifyPhrase.mockResolvedValue([{
       phrase: 'test',
       romaji: 'test',
       boundingBox: [0, 0, 0, 0],
@@ -235,7 +244,7 @@ describe('POST /api/identify-phrase', () => {
       translation: { translation: 'Test' },
       explain: { meaning: 'Test', contextUsage: 'Test usage' },
       grammar: { breakdown: 'Test breakdown' },
-    });
+    }]);
 
     const payload = {
       ...validPayload,
@@ -436,7 +445,7 @@ describe('POST /api/identify-phrase', () => {
   });
 
   it('should include metadata in request if provided', async () => {
-    mockGeminiService.identifyPhrase.mockResolvedValue({
+    mockGeminiService.identifyPhrase.mockResolvedValue([{
       phrase: 'test',
       romaji: 'test',
       boundingBox: [0, 0, 0, 0],
@@ -444,7 +453,7 @@ describe('POST /api/identify-phrase', () => {
       translation: { translation: 'Test' },
       explain: { meaning: 'Test', contextUsage: 'Test usage' },
       grammar: { breakdown: 'Test breakdown' },
-    });
+    }]);
 
     const payload = {
       ...validPayload,

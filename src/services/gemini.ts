@@ -21,8 +21,19 @@ export class GeminiService {
 
   async identifyPhrase(params: {
     screenshot: string;
+    maxPhrases?: number;
   }) {
-    const prompt = this.buildIdentifyPrompt();
+    const maxPhrases = params.maxPhrases ?? 25;
+
+    if (maxPhrases < 1 || maxPhrases > 100) {
+      throw new ApplicationError(
+        'INVALID_REQUEST',
+        'maxPhrases must be between 1 and 100',
+        400,
+      );
+    }
+
+    const prompt = this.buildIdentifyPrompt(maxPhrases);
     const schema = this.getPhraseSchema();
 
     return callWithRetry(async () => {
@@ -77,74 +88,6 @@ export class GeminiService {
     });
   }
 
-  async identifyPhrases(params: {
-    screenshot: string;
-    maxPhrases?: number;
-  }) {
-    const maxPhrases = params.maxPhrases ?? 25;
-
-    if (maxPhrases < 1 || maxPhrases > 100) {
-      throw new ApplicationError(
-        'INVALID_REQUEST',
-        'maxPhrases must be between 1 and 100',
-        400,
-      );
-    }
-
-    const prompt = this.buildIdentifyPhrasesPrompt(maxPhrases);
-    const schema = this.getPhrasesSchema();
-
-    return callWithRetry(async () => {
-      const response = await this.ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: [{
-          parts: [
-            {
-              inlineData: {
-                data: params.screenshot,
-                mimeType: 'image/png',
-              },
-            },
-            { text: prompt },
-          ],
-        }],
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: schema,
-          temperature: 0.2,
-          thinkingConfig: {
-            thinkingLevel: ThinkingLevel.LOW,
-          },
-        },
-      });
-
-      this.logUsage('identify-phrases', response.usageMetadata);
-
-      if (!response.text) {
-        throw new ApplicationError(
-          'API_ERROR',
-          'Gemini API returned empty response',
-          502,
-        );
-      }
-
-      try {
-        return JSON.parse(response.text);
-      }
-      catch (parseError) {
-        this.logger.error({
-          responseText: response.text,
-          parseError,
-        }, 'Failed to parse Gemini API response');
-
-        throw new ApplicationError(
-          'API_ERROR',
-          'Invalid JSON response from Gemini API',
-          502,
-        );
-      }
-    });
-  }
 
   async analyzeContent(params: {
     phrase: string;
@@ -207,83 +150,63 @@ export class GeminiService {
     });
   }
 
-  private buildIdentifyPrompt(): string {
+  private buildIdentifyPrompt(maxPhrases: number): string {
     return `
 You are analyzing a screenshot of a Japanese webpage.
 
-Identify the primary Japanese phrase in this image.
-The entire image contains the user's selection.
-Provide precise bounding box coordinates in a normalized 0-1000 coordinate system, where:
-- 0 represents the top-left corner
-- 1000 represents the bottom-right corner
-- Coordinates are relative to this image's dimensions
+Identify up to ${maxPhrases} distinct Japanese text phrases visible in this image.
+The entire image contains the user's selection area.
 
-Tokenize the phrase into words following these rules for language learners:
-- Keep conjugated verbs as single tokens (e.g., 食べられなかった not 食べ/られ/なかっ/た)
-- Keep conjugated adjectives as single tokens (e.g., 美しくなかった not 美しく/なかっ/た)
-- Keep compound nouns together (e.g., 日本語 not 日本/語)
-- Keep adverbial expressions together (e.g., 逆に not 逆/に, 特に not 特/に)
-- Keep verb + auxiliary patterns together when they form a single grammatical unit
-- Keep common expressions like みたいな, ような, らしい as single tokens
-- Particles (は, が, を, に, で, etc.) should be separate tokens UNLESS part of a set phrase
-- The goal is meaningful units a learner would look up in a dictionary or study as vocabulary
+For EACH phrase, provide:
 
-For each token provide: word, reading (hiragana/katakana), romaji, partOfSpeech (array of tags like verb, noun, adjective, particle), hasKanji (boolean - true if word contains kanji), and isCommon (boolean - true if commonly used).
+1. **Basic Information:**
+   - The complete Japanese text
+   - Romanized reading (romaji)
+   - Precise bounding box coordinates as [y_min, x_min, y_max, x_max] in a normalized 0-1000 coordinate system:
+     * All values are 0-1000 scale relative to this image's dimensions
+     * y_min: top edge, x_min: left edge, y_max: bottom edge, x_max: right edge
 
-Additionally, provide pre-computed phrase-level analysis:
+2. **Tokenization:**
+   Tokenize the phrase into words following these rules for language learners:
+   - Keep conjugated verbs as single tokens (e.g., 食べられなかった not 食べ/られ/なかっ/た)
+   - Keep conjugated adjectives as single tokens (e.g., 美しくなかった not 美しく/なかっ/た)
+   - Keep compound nouns together (e.g., 日本語 not 日本/語)
+   - Keep adverbial expressions together (e.g., 逆に not 逆/に, 特に not 特/に)
+   - Keep verb + auxiliary patterns together when they form a single grammatical unit
+   - Keep common expressions like みたいな, ような, らしい as single tokens
+   - Particles (は, が, を, に, で, etc.) should be separate tokens UNLESS part of a set phrase
+   - The goal is meaningful units a learner would look up in a dictionary or study as vocabulary
 
-**Translation:**
-1. Natural English translation considering the context
-2. Literal translation if significantly different
-3. Brief explanation of any contextual nuances or cultural notes
+   For each token provide: word, reading (hiragana/katakana), romaji, partOfSpeech (array of tags like verb, noun, adjective, particle), hasKanji (boolean - true if word contains kanji), and isCommon (boolean - true if commonly used).
 
-**Explanation:**
-1. Core meaning and how the phrase is used
-2. How it functions in this specific context
-3. Common situations where this phrase appears
-4. Important nuances, connotations, or formality level
+3. **Pre-computed Analysis (for EACH phrase):**
 
-**Grammar:**
-1. Identify all grammatical elements (particles, verb forms, conjugations, etc.)
-2. Explain the grammatical structure step-by-step
-3. Explain why each element is used in this context
-4. Common variations or alternative constructions
-5. Tips for learners (common mistakes, similar patterns)
+   **Translation:**
+   - Natural English translation considering the context
+   - Literal translation if significantly different
+   - Brief explanation of any contextual nuances or cultural notes
+
+   **Explanation:**
+   - Core meaning and how the phrase is used
+   - How it functions in this specific context
+   - Common situations where this phrase appears
+   - Important nuances, connotations, or formality level
+
+   **Grammar:**
+   - Identify all grammatical elements (particles, verb forms, conjugations, etc.)
+   - Explain the grammatical structure step-by-step
+   - Explain why each element is used in this context
+   - Common variations or alternative constructions
+   - Tips for learners (common mistakes, similar patterns)
 
 Format all text fields in translation, explanation, and grammar using markdown. Highlight key terms, usage patterns, and grammatical elements.
-    `.trim();
-  }
 
-  private buildIdentifyPhrasesPrompt(maxPhrases: number): string {
-    return `
-You are analyzing a full viewport screenshot of a Japanese webpage.
-
-Identify up to ${maxPhrases} distinct Japanese text phrases visible in this image.
-
-For each phrase:
-- Provide the complete Japanese text
-- Tokenize into words following these rules for language learners:
-  - Keep conjugated verbs as single tokens (e.g., 食べられなかった not 食べ/られ/なかっ/た)
-  - Keep conjugated adjectives as single tokens (e.g., 美しくなかった not 美しく/なかっ/た)
-  - Keep compound nouns together (e.g., 日本語 not 日本/語)
-  - Keep adverbial expressions together (e.g., 逆に not 逆/に, 特に not 特/に)
-  - Keep verb + auxiliary patterns together when they form a single grammatical unit
-  - Keep common expressions like みたいな, ような, らしい as single tokens
-  - Particles (は, が, を, に, で, etc.) should be separate tokens UNLESS part of a set phrase
-  - The goal is meaningful units a learner would look up in a dictionary or study as vocabulary
-- For each token provide: word, reading (hiragana/katakana), romaji, partOfSpeech (array of tags like verb, noun, adjective, particle), hasKanji (boolean - true if word contains kanji), and isCommon (boolean - true if commonly used)
-- Provide precise bounding box coordinates as [y_min, x_min, y_max, x_max] in a normalized 0-1000 coordinate system:
-  - All values are 0-1000 scale relative to this full image's dimensions
-  - y_min: top edge of bounding box
-  - x_min: left edge of bounding box
-  - y_max: bottom edge of bounding box
-  - x_max: right edge of bounding box
-
-Focus on meaningful phrases (sentences, clauses, or standalone expressions), not individual words.
+Focus on meaningful phrases (sentences, clauses, or standalone expressions).
 Prioritize larger, more prominent text phrases.
 Return phrases in order of visual prominence (largest/most prominent first).
     `.trim();
   }
+
 
   private buildAnalysisPrompt(params: any): string {
     const baseContext = params.context?.fullPhrase
@@ -380,108 +303,6 @@ Format other text fields using markdown. Highlight conjugation forms and transfo
 
   private getPhraseSchema() {
     return {
-      type: 'object',
-      properties: {
-        phrase: { type: 'string' },
-        romaji: { type: 'string' },
-        boundingBox: {
-          type: 'array',
-          items: { type: 'number' },
-          minItems: 4,
-          maxItems: 4,
-        },
-        tokens: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              word: { type: 'string' },
-              reading: { type: 'string' },
-              romaji: { type: 'string' },
-              partOfSpeech: { type: 'array', items: { type: 'string' } },
-              hasKanji: { type: 'boolean' },
-              isCommon: { type: 'boolean' },
-            },
-            required: ['word', 'reading', 'romaji', 'partOfSpeech', 'hasKanji'],
-          },
-        },
-        translation: {
-          type: 'object',
-          properties: {
-            translation: {
-              type: 'string',
-              description: 'Natural English translation',
-            },
-            literalTranslation: {
-              type: 'string',
-              description: 'Literal translation if significantly different from natural translation',
-            },
-            notes: {
-              type: 'string',
-              description: 'Contextual nuances or cultural notes',
-            },
-          },
-          required: ['translation'],
-        },
-        explain: {
-          type: 'object',
-          properties: {
-            meaning: {
-              type: 'string',
-              description: 'Core meaning and usage',
-            },
-            contextUsage: {
-              type: 'string',
-              description: 'How it functions in this specific context',
-            },
-            commonSituations: {
-              type: 'string',
-              description: 'Common situations where this phrase appears',
-            },
-            nuances: {
-              type: 'string',
-              description: 'Important nuances, connotations, or formality level',
-            },
-          },
-          required: ['meaning', 'contextUsage'],
-        },
-        grammar: {
-          type: 'object',
-          properties: {
-            breakdown: {
-              type: 'string',
-              description: 'Step-by-step grammatical breakdown',
-            },
-            elements: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  element: { type: 'string' },
-                  type: { type: 'string' },
-                  explanation: { type: 'string' },
-                },
-              },
-              description: 'Individual grammatical elements with explanations',
-            },
-            variations: {
-              type: 'string',
-              description: 'Common variations or alternative constructions',
-            },
-            learnerTips: {
-              type: 'string',
-              description: 'Tips for learners, common mistakes',
-            },
-          },
-          required: ['breakdown'],
-        },
-      },
-      required: ['phrase', 'romaji', 'boundingBox', 'tokens', 'translation', 'explain', 'grammar'],
-    };
-  }
-
-  private getPhrasesSchema() {
-    return {
       type: 'array',
       items: {
         type: 'object',
@@ -509,11 +330,82 @@ Format other text fields using markdown. Highlight conjugation forms and transfo
               required: ['word', 'reading', 'romaji', 'partOfSpeech', 'hasKanji'],
             },
           },
+          translation: {
+            type: 'object',
+            properties: {
+              translation: {
+                type: 'string',
+                description: 'Natural English translation',
+              },
+              literalTranslation: {
+                type: 'string',
+                description: 'Literal translation if significantly different from natural translation',
+              },
+              notes: {
+                type: 'string',
+                description: 'Contextual nuances or cultural notes',
+              },
+            },
+            required: ['translation'],
+          },
+          explain: {
+            type: 'object',
+            properties: {
+              meaning: {
+                type: 'string',
+                description: 'Core meaning and usage',
+              },
+              contextUsage: {
+                type: 'string',
+                description: 'How it functions in this specific context',
+              },
+              commonSituations: {
+                type: 'string',
+                description: 'Common situations where this phrase appears',
+              },
+              nuances: {
+                type: 'string',
+                description: 'Important nuances, connotations, or formality level',
+              },
+            },
+            required: ['meaning', 'contextUsage'],
+          },
+          grammar: {
+            type: 'object',
+            properties: {
+              breakdown: {
+                type: 'string',
+                description: 'Step-by-step grammatical breakdown',
+              },
+              elements: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    element: { type: 'string' },
+                    type: { type: 'string' },
+                    explanation: { type: 'string' },
+                  },
+                },
+                description: 'Individual grammatical elements with explanations',
+              },
+              variations: {
+                type: 'string',
+                description: 'Common variations or alternative constructions',
+              },
+              learnerTips: {
+                type: 'string',
+                description: 'Tips for learners, common mistakes',
+              },
+            },
+            required: ['breakdown'],
+          },
         },
-        required: ['phrase', 'romaji', 'boundingBox', 'tokens'],
+        required: ['phrase', 'romaji', 'boundingBox', 'tokens', 'translation', 'explain', 'grammar'],
       },
     };
   }
+
 
   private getAnalysisSchema(action: string) {
     switch (action) {

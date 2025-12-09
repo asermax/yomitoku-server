@@ -39,17 +39,14 @@ This file provides guidance to Claude Code when working with this codebase.
 ## API Endpoints
 
 ### POST /api/identify-phrase
-- Identifies Japanese text from screenshots
+- Identifies multiple Japanese phrases from screenshots (user selection area)
 - PNG validation, size limits, rate limiting
-- Returns tokenized phrase with readings and bounding box
-
-### POST /api/identify-phrases
-- Identifies multiple Japanese phrases from full viewport screenshots
-- Same validation as identify-phrase (PNG, size limits, rate limiting)
-- Returns array of phrases with tokenized words and bounding boxes
-- Model configured for speed (thinking level minimized)
-- NOT cached (full-page screenshots vary significantly)
-- Maximum phrases: 25 (configurable per request)
+- Returns array of phrases, each with:
+  - Tokenized words with readings and bounding box
+  - Pre-computed actions: translation, explanation, grammar analysis
+- Optional `maxPhrases` parameter (default: 25, max: 100)
+- NOT cached (screenshots vary significantly)
+- **Breaking change (2024-12-08):** Response format changed from single phrase object to `{phrases: [...]}` array
 
 ### POST /api/analyze
 - Analyzes Japanese phrases and words with 5 action types:
@@ -253,6 +250,19 @@ See `.env.example` for required configuration:
 
 ### Rate Limiting
 MVP: 50 requests/hour per endpoint. Future: per-user quotas, different limits by action type.
+
+### API Consolidation (2024-12-08)
+**Breaking change:** Removed `/api/identify-phrases` endpoint and consolidated functionality into `/api/identify-phrase`.
+
+**Rationale:** The extension agent (yomitoku-chrome-extension) requested multi-phrase detection with pre-computed actions for user selections. Instead of maintaining two separate endpoints (one for single phrase with actions, one for multiple phrases without actions), we consolidated into a single endpoint that handles both use cases:
+- `/api/identify-phrase` now returns an array of phrases with pre-computed actions
+- Supports `maxPhrases` parameter (default: 25, max: 100)
+- Eliminates code duplication and simplifies the API surface
+
+**Impact:**
+- Chrome extension will consume the new array response format `{phrases: [...]}`
+- Documentation updates coordinated with vault-agent (shin-sekai docs)
+- All tests updated to expect array format
 
 ## Design Documentation
 

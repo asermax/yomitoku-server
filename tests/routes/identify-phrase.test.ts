@@ -18,8 +18,8 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
   });
 
   describe('successful requests', () => {
-    it('should return 200 with phrase data when service succeeds', async () => {
-      const mockResult = {
+    it('should return 200 with phrases array when service succeeds', async () => {
+      const mockPhraseData = {
         phrase: 'こんにちは',
         romaji: 'konnichiwa',
         boundingBox: [100, 200, 150, 500],
@@ -45,7 +45,7 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
         },
       };
 
-      mockGeminiService.identifyPhrase.mockResolvedValue(mockResult);
+      mockGeminiService.identifyPhrase.mockResolvedValue([mockPhraseData]);
 
       const response = await app.inject({
         method: 'POST',
@@ -57,11 +57,11 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       });
 
       expect(response.statusCode).toBe(200);
-      expect(response.json()).toEqual(mockResult);
+      expect(response.json()).toEqual({ phrases: [mockPhraseData] });
     });
 
     it('should handle requests with metadata', async () => {
-      mockGeminiService.identifyPhrase.mockResolvedValue({
+      mockGeminiService.identifyPhrase.mockResolvedValue([{
         phrase: 'test',
         romaji: 'test',
         boundingBox: [0, 0, 0, 0],
@@ -69,7 +69,7 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
         translation: { translation: 'Test' },
         explain: { meaning: 'Test', contextUsage: 'Test usage' },
         grammar: { breakdown: 'Test breakdown' },
-      });
+      }]);
 
       const payload = createIdentifyPhrasePayload({
         metadata: {
@@ -88,6 +88,47 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
       });
 
       expect(response.statusCode).toBe(200);
+    });
+
+    it('should handle maxPhrases parameter', async () => {
+      const mockPhrasesData = [
+        {
+          phrase: 'こんにちは',
+          romaji: 'konnichiwa',
+          boundingBox: [100, 200, 150, 500],
+          tokens: [],
+          translation: { translation: 'Hello' },
+          explain: { meaning: 'Greeting', contextUsage: 'Daytime greeting' },
+          grammar: { breakdown: 'Set phrase' },
+        },
+        {
+          phrase: 'ありがとう',
+          romaji: 'arigatou',
+          boundingBox: [200, 300, 250, 600],
+          tokens: [],
+          translation: { translation: 'Thank you' },
+          explain: { meaning: 'Thanks', contextUsage: 'Expression of gratitude' },
+          grammar: { breakdown: 'Set phrase' },
+        },
+      ];
+
+      mockGeminiService.identifyPhrase.mockResolvedValue(mockPhrasesData);
+
+      const payload = createIdentifyPhrasePayload({
+        maxPhrases: 2,
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/identify-phrase',
+        headers: {
+          'x-api-key': TEST_API_KEY,
+        },
+        payload,
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ phrases: mockPhrasesData });
     });
   });
 
@@ -230,7 +271,7 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
 
   describe('rate limiting', () => {
     it('should accept requests within rate limits', async () => {
-      mockGeminiService.identifyPhrase.mockResolvedValue({
+      mockGeminiService.identifyPhrase.mockResolvedValue([{
         phrase: 'test',
         romaji: 'test',
         boundingBox: [0, 0, 0, 0],
@@ -238,7 +279,7 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
         translation: { translation: 'Test' },
         explain: { meaning: 'Test', contextUsage: 'Test usage' },
         grammar: { breakdown: 'Test breakdown' },
-      });
+      }]);
 
       const payload = createIdentifyPhrasePayload();
 
@@ -279,7 +320,7 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
 
   describe('content-type handling', () => {
     it('should return JSON content-type', async () => {
-      mockGeminiService.identifyPhrase.mockResolvedValue({
+      mockGeminiService.identifyPhrase.mockResolvedValue([{
         phrase: 'test',
         romaji: 'test',
         boundingBox: [0, 0, 0, 0],
@@ -287,7 +328,7 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
         translation: { translation: 'Test' },
         explain: { meaning: 'Test', contextUsage: 'Test usage' },
         grammar: { breakdown: 'Test breakdown' },
-      });
+      }]);
 
       const response = await app.inject({
         method: 'POST',
