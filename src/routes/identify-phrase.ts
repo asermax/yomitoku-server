@@ -138,6 +138,12 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
         maxPhrases,
       });
 
+      app.log.info({
+        phrasesFound: phrases.length,
+        maxPhrases,
+        imageSize,
+      }, 'Successfully identified phrases');
+
       return { phrases };
     }
     catch (error) {
@@ -155,7 +161,7 @@ export const identifyPhraseRoutes: FastifyPluginAsync = async (app) => {
       }, 'Unexpected error in identify-phrase');
 
       throw categorizeApiError(error, {
-        context: 'identify phrase',
+        context: 'identify phrases',
         isDevelopment: process.env.NODE_ENV === 'development',
       });
     }

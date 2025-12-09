@@ -259,10 +259,56 @@ MVP: 50 requests/hour per endpoint. Future: per-user quotas, different limits by
 - Supports `maxPhrases` parameter (default: 25, max: 100)
 - Eliminates code duplication and simplifies the API surface
 
-**Impact:**
-- Chrome extension will consume the new array response format `{phrases: [...]}`
-- Documentation updates coordinated with vault-agent (shin-sekai docs)
-- All tests updated to expect array format
+**Full Impact:**
+
+1. **Endpoint Removal:**
+   - `/api/identify-phrases` endpoint deleted entirely
+   - Route handler removed: `src/routes/identify-phrases.ts`
+   - Tests removed: `tests/routes/identify-phrases.test.ts`
+   - Route registration removed from `src/app.ts`
+
+2. **Response Format Change (BREAKING):**
+   - **OLD Response (single phrase):**
+     ```typescript
+     {
+       phrase: string,
+       romaji: string,
+       boundingBox: [number, number, number, number],
+       tokens: PhraseToken[],
+       translation: TranslationResult,
+       explain: ExplainResult,
+       grammar: GrammarResult
+     }
+     ```
+   - **NEW Response (array wrapper):**
+     ```typescript
+     {
+       phrases: [{
+         phrase: string,
+         romaji: string,
+         boundingBox: [number, number, number, number],
+         tokens: PhraseToken[],
+         translation: TranslationResult,
+         explain: ExplainResult,
+         grammar: GrammarResult
+       }, ...]
+     }
+     ```
+
+3. **Request Format Change:**
+   - **Added:** Optional `maxPhrases` parameter (default: 25, max: 100)
+   - **Request body:** `{ image: string, maxPhrases?: number, metadata?: PageMetadata }`
+
+4. **Pre-Computed Actions:**
+   - All phrases in array now include pre-computed `translation`, `explain`, and `grammar` fields
+   - Eliminates need for separate `/api/analyze` calls for common actions
+   - Reduces client-server round trips from N+1 to 1 call
+
+5. **Client Migration Guide:**
+   - Update response handling to access `response.phrases[0]` for single phrase
+   - Update UI to handle `response.phrases` array for multiple phrases
+   - Add `maxPhrases` parameter to request if limiting results needed
+   - Update TypeScript types to `IdentifyPhraseResponse` from `src/types/api.ts`
 
 ## Design Documentation
 

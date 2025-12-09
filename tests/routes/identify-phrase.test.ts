@@ -246,7 +246,7 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
 
       expect(response.statusCode).toBe(504);
       const responseError = response.json();
-      expect(responseError.message).toContain('timed out');
+      expect(responseError.message).toContain('Request timed out');
     });
 
     it('should return 500 for unexpected errors', async () => {
@@ -265,7 +265,7 @@ describe('POST /api/identify-phrase - Integration Tests', () => {
 
       expect(response.statusCode).toBe(500);
       const error = response.json();
-      expect(error.message).toContain('Failed to identify phrase');
+      expect(error.message).toContain('Failed to identify phrases');
     });
   });
 

@@ -19,6 +19,25 @@ export class GeminiService {
     this.logger = logger;
   }
 
+  /**
+   * Identifies multiple Japanese phrases in a screenshot and returns pre-computed analysis.
+   *
+   * @param params - Identification parameters
+   * @param params.screenshot - Base64-encoded PNG screenshot (cropped to user selection)
+   * @param params.maxPhrases - Maximum number of phrases to detect (default: 25, max: 100)
+   * @returns Array of phrase data with pre-computed translation, explain, and grammar actions
+   * @throws {ApplicationError} If maxPhrases is out of valid range (1-100)
+   * @throws {ApplicationError} If Gemini API returns empty response
+   *
+   * @example
+   * ```typescript
+   * const phrases = await geminiService.identifyPhrase({
+   *   screenshot: 'iVBORw0KGgoAAAANSUhEUg...',
+   *   maxPhrases: 10
+   * });
+   * // Returns: [{phrase, romaji, boundingBox, tokens, translation, explain, grammar}, ...]
+   * ```
+   */
   async identifyPhrase(params: {
     screenshot: string;
     maxPhrases?: number;
