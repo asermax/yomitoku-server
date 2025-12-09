@@ -184,6 +184,8 @@ For EACH phrase, provide:
    - Precise bounding box coordinates as [y_min, x_min, y_max, x_max] in a normalized 0-1000 coordinate system:
      * All values are 0-1000 scale relative to this image's dimensions
      * y_min: top edge, x_min: left edge, y_max: bottom edge, x_max: right edge
+     * Add 2-5 pixels of padding on all sides of the detected text BEFORE normalizing to the 0-1000 coordinate scale
+     * This ensures visual separation between overlapping or adjacent text for better clickability
 
 2. **Tokenization:**
    Tokenize the phrase into words following these rules for language learners:
